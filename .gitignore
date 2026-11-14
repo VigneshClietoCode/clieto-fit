@@ -1,11 +1,1 @@
 node_modules/
-.next/
-out/
-coverage/
-*.tsbuildinfo
-.env
-.env.*
-!.env.example
-prisma/dev.db
-prisma/dev.db-journal
-storage/logos/

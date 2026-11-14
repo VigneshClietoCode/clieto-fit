@@ -1,0 +1,3 @@
+{
+  "/api/branding/[gymId]/route": "app/api/branding/[gymId]/route.js"
+}
