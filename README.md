@@ -6,13 +6,13 @@ A responsive gym-training portal with a shared Next.js API, tenant-scoped Super 
 
 Requirements: Node.js 20.9 or newer and npm.
 
-1. Copy `.env.example` to `.env`. Set a random `SESSION_SECRET` of at least 32 characters and choose a Super Admin email, name, and password (at least 12 characters). Keep `.env` private.
+1. Copy `.env.example` to `.env`. Set `DATABASE_URL` to your Supabase PostgreSQL connection string, a random `SESSION_SECRET` of at least 32 characters, and a Super Admin email, name, and password (at least 12 characters). Keep `.env` private.
 2. From the project directory, run:
 
    ```powershell
    npm install
    npm run db:generate
-   npm run db:migrate -- --name init
+   npm run db:deploy
    npm run db:seed
    npm run dev
    ```
@@ -20,7 +20,7 @@ Requirements: Node.js 20.9 or newer and npm.
 3. Visit `http://localhost:3000/login` and sign in to the **Super Admin** portal using the seed values from `.env`.
 4. Create a gym in **Gyms & accounts**, then create its Admin account. Admins can add members, assign fees, and manage gym operations.
 
-`prisma migrate dev` may run the configured Super Admin seed after applying migrations; `npm run db:seed` is safe to repeat and sets the account password to the current environment value. The initial database is SQLite at `prisma/dev.db`. Logo uploads are stored privately under `storage/logos`; both locations are excluded from Git. Back up these files together for a local backup.
+`npm run db:deploy` applies the committed PostgreSQL migrations; `npm run db:seed` is safe to repeat and sets the account password to the current environment value. Use a Supabase direct or session-pooler connection for migrations; transaction-pooler connections are not suitable for Prisma Migrate. Logo uploads are stored privately under `storage/logos`, which is excluded from Git.
 
 ## Portals and capabilities
 
@@ -50,9 +50,9 @@ All data-bearing APIs enforce role, gym, and (for members) record ownership on t
 
 Every mutating route validates its input, checks the request origin, and uses the authenticated principal's role and gym rather than trusting client-supplied ownership. Logo uploads accept PNG/JPEG/WebP content up to 2 MB, derive the extension from file bytes, and are served through an authenticated, tenant-checked endpoint.
 
-## Supabase PostgreSQL migration path
+## Supabase PostgreSQL
 
-The Prisma models use portable scalar types, string-backed role/status values, and Prisma-managed IDs. For a new PostgreSQL environment, change `provider = "sqlite"` to `provider = "postgresql"` in `prisma/schema.prisma`, set `DATABASE_URL` to the Supabase PostgreSQL connection string, generate a PostgreSQL migration with Prisma, and deploy it using `npm run db:deploy`. Move existing SQLite data with a deliberate export/import and reconciliation plan; changing the provider does not transfer local data. Keep Supabase credentials on the server and use a least-privilege database role.
+Prisma connects to Supabase PostgreSQL using `DATABASE_URL`. Run `npm run db:deploy` to create the tables in a new, empty Supabase database, then run `npm run db:seed` to create the Super Admin. Changing the provider does not transfer data from an existing SQLite database; move any data you need with a deliberate export/import and reconciliation plan. Keep Supabase credentials on the server and use a least-privilege database role.
 
 ## Verification
 
