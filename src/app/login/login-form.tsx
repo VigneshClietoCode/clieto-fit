@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { apiUrl } from "@/lib/api-url";
 
 const portals = [
   { value: "SUPER_ADMIN", label: "Super Admin" },
@@ -23,8 +24,9 @@ export default function LoginForm() {
     setError("");
     setLoading(true);
     try {
-      const response = await fetch("/api/auth/login", {
+      const response = await fetch(apiUrl("/api/auth/login"), {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password, portal }),
       });

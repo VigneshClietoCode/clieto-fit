@@ -1,22 +1,13 @@
 import { createHmac, randomBytes } from "node:crypto";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { db } from "@/lib/db";
+import { SESSION_COOKIE_NAME } from "@/shared/session-constants";
 
-export const SESSION_COOKIE = "clieto_fit_session";
+export const SESSION_COOKIE = SESSION_COOKIE_NAME;
 export const SESSION_DAYS = 7;
 
-export type Role = "SUPER_ADMIN" | "ADMIN" | "USER";
-
-export type Principal = {
-  id: string;
-  email: string;
-  name: string;
-  role: Role;
-  gymId: string | null;
-  gymName: string | null;
-  gymTimezone: string | null;
-  feeId: string | null;
-};
+export type { Principal, Role } from "@/shared/auth-types";
+import type { Principal, Role } from "@/shared/auth-types";
 
 function sessionSecret(): string {
   const value = process.env.SESSION_SECRET;
@@ -30,33 +21,52 @@ function tokenDigest(token: string): string {
   return createHmac("sha256", sessionSecret()).update(token).digest("hex");
 }
 
-export async function createSession(userId: string): Promise<void> {
+async function issueSession(userId: string) {
   const token = randomBytes(32).toString("base64url");
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
   await db.session.create({
     data: { tokenHash: tokenDigest(token), userId, expiresAt },
   });
+  return { token, expiresAt };
+}
+
+export async function createSession(userId: string): Promise<void> {
+  const { token, expiresAt } = await issueSession(userId);
   const cookieStore = await cookies();
+  const domain = process.env.SESSION_COOKIE_DOMAIN?.trim();
   cookieStore.set(SESSION_COOKIE, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
     expires: expiresAt,
+    ...(domain ? { domain } : {}),
   });
 }
 
+export async function createBearerSession(userId: string) {
+  return issueSession(userId);
+}
+
+async function requestSessionToken(): Promise<string | undefined> {
+  const authorization = (await headers()).get("authorization");
+  if (authorization) {
+    const bearer = /^Bearer ([A-Za-z0-9_-]+)$/.exec(authorization);
+    return bearer?.[1];
+  }
+  return (await cookies()).get(SESSION_COOKIE)?.value;
+}
+
 export async function clearSession(): Promise<void> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(SESSION_COOKIE)?.value;
+  const token = await requestSessionToken();
   if (token) {
     await db.session.deleteMany({ where: { tokenHash: tokenDigest(token) } });
   }
-  cookieStore.delete(SESSION_COOKIE);
+  (await cookies()).delete(SESSION_COOKIE);
 }
 
 export async function getPrincipal(): Promise<Principal | null> {
-  const token = (await cookies()).get(SESSION_COOKIE)?.value;
+  const token = await requestSessionToken();
   if (!token) return null;
 
   const session = await db.session.findUnique({

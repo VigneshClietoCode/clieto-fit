@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import { ApiError, assertSameOrigin, handleApiError, readJson } from "@/lib/api";
-import { createSession } from "@/lib/auth";
+import { createBearerSession, createSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
 
@@ -10,6 +10,7 @@ const credentialsSchema = z.object({
   email: z.string().trim().email().max(254).transform((value) => value.toLowerCase()),
   password: z.string().min(1).max(128),
   portal: z.enum(["SUPER_ADMIN", "ADMIN", "USER"]),
+  client: z.enum(["web", "mobile"]).default("web"),
 });
 
 const attempts = new Map<string, { count: number; resetAt: number }>();
@@ -43,8 +44,8 @@ function enforceLoginLimit(key: string): void {
 
 export async function POST(request: Request) {
   try {
-    assertSameOrigin(request);
     const input = credentialsSchema.parse(await readJson(request));
+    if (input.client === "web") assertSameOrigin(request);
     const key = rateLimitKey(input.email);
     enforceLoginLimit(key);
     const user = await db.user.findUnique({
@@ -65,6 +66,16 @@ export async function POST(request: Request) {
     }
 
     attempts.delete(key);
+    if (input.client === "mobile") {
+      const session = await createBearerSession(user.id);
+      return NextResponse.json({
+        user: { id: user.id, name: user.name, email: user.email, role: user.role },
+        accessToken: session.token,
+        tokenType: "Bearer",
+        expiresAt: session.expiresAt,
+      });
+    }
+
     await createSession(user.id);
     return NextResponse.json({
       user: {

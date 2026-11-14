@@ -30,7 +30,7 @@ export async function GET(_request: Request, context: RouteContext) {
     if (!contentType || !gym?.logoUrl) {
       throw new ApiError("Logo not found.", 404);
     }
-    const bytes = await readFile(path.join(logoDirectory, gym.logoUrl));
+    const bytes = await readFile(path.join(/*turbopackIgnore: true*/ logoDirectory, gym.logoUrl));
     return new NextResponse(new Uint8Array(bytes), {
       headers: {
         "Content-Type": contentType,

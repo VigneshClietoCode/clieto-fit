@@ -1,6 +1,6 @@
 # Clieto Fit
 
-A responsive gym-training portal with a shared Next.js API, tenant-scoped Super Admin, Gym Admin/Trainer, and Member experiences. The API is the authority for authentication, permissions, and gym ownership; clients never access Prisma or the database directly.
+A responsive gym-training portal with a Next.js web app and a separately deployable REST API service, plus tenant-scoped Super Admin, Gym Admin/Trainer, and Member experiences. The API is the authority for authentication, permissions, and gym ownership; clients never access Prisma or the database directly.
 
 ## Local setup
 
@@ -14,11 +14,18 @@ Requirements: Node.js 20.9 or newer and npm.
    npm run db:generate
    npm run db:deploy
    npm run db:seed
+   ```
+
+3. Start both the web app and API together:
+
+   ```powershell
    npm run dev
    ```
 
-3. Visit `http://localhost:3000/login` and sign in to the **Super Admin** portal using the seed values from `.env`.
-4. Create a gym in **Gyms & accounts**, then create its Admin account. Admins can add members, assign fees, and manage gym operations.
+   The web app runs at `http://localhost:3000` and the API at `http://localhost:3001`. To run them independently, use `npm run web:dev` and `npm run api:dev` in separate terminals.
+
+4. Visit `http://localhost:3000/login` and sign in to the **Super Admin** portal using the seed values from `.env`.
+5. Create a gym in **Gyms & accounts**, then create its Admin account. Admins can add members, assign fees, and manage gym operations.
 
 `npm run db:deploy` applies the committed PostgreSQL migrations; `npm run db:seed` is safe to repeat and sets the account password to the current environment value. Use a Supabase direct or session-pooler connection for migrations; transaction-pooler connections are not suitable for Prisma Migrate. Logo uploads are stored privately under `storage/logos`, which is excluded from Git.
 
@@ -28,7 +35,7 @@ Requirements: Node.js 20.9 or newer and npm.
 - **Admin / Trainer:** manage members and fee assignments, training and diet plans, daily attendance, fee structures, manual payment records, offers, equipment, gym timezone, and a validated gym logo.
 - **Member:** view only their assigned plans, own attendance and payment history, assigned fee, enabled/in-date gym offers, and gym equipment; check in once per local gym day; update their own name and password.
 
-All data-bearing APIs enforce role, gym, and (for members) record ownership on the server. Login checks the selected portal against the stored role. Sessions use random opaque tokens stored as HMAC digests, HTTP-only cookies, and same-origin checks for mutations. Passwords are bcrypt-hashed. Admin and Super Admin account creation requires a 12-character minimum password; the Super Admin bootstrap values are supplied only through environment variables.
+All data-bearing APIs enforce role, gym, and (for members) record ownership on the server. Login checks the selected portal against the stored role. Sessions use random opaque tokens stored as HMAC digests; web sessions use HTTP-only cookies and mobile sessions use bearer tokens. Cookie-authenticated mutations check the configured web origin. Passwords are bcrypt-hashed. Admin and Super Admin account creation requires a 12-character minimum password; the Super Admin bootstrap values are supplied only through environment variables.
 
 ## Explicit initial policies
 
@@ -39,7 +46,11 @@ All data-bearing APIs enforce role, gym, and (for members) record ownership on t
 
 ## API outline
 
+The standalone API service lives in `apps/api`; run it with `npm run api:dev` and build it with `npm run api:build`. The web app calls it at `NEXT_PUBLIC_API_URL`. Configure `CORS_ALLOWED_ORIGINS` on the API with the exact web origin(s). For production subdomains, set `SESSION_COOKIE_DOMAIN` to their shared parent domain so the web server can forward the HTTP-only session cookie during server rendering. Do not use wildcard CORS origins with credentials.
+
 - `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`
+- Mobile clients can send `"client": "mobile"` to the login endpoint to receive a bearer session token; include it as `Authorization: Bearer <token>` on subsequent requests and call logout to revoke it. Keep tokens in the platform's secure storage.
+- `GET /api/health` (service and database readiness)
 - `GET /api/portal`
 - `GET /api/records/{members|training|diets|attendance|fees|payments|offers|equipment}`
 - `POST /api/records/{resource}`, `PATCH|DELETE /api/records/{resource}/{id}`
@@ -48,19 +59,21 @@ All data-bearing APIs enforce role, gym, and (for members) record ownership on t
 - `PUT|DELETE /api/branding`, `GET /api/branding/{gymId}`
 - `PATCH /api/account` (the signed-in account only)
 
-Every mutating route validates its input, checks the request origin, and uses the authenticated principal's role and gym rather than trusting client-supplied ownership. Logo uploads accept PNG/JPEG/WebP content up to 2 MB, derive the extension from file bytes, and are served through an authenticated, tenant-checked endpoint.
+Every mutating route validates its input, checks the configured web origin for cookie-authenticated requests, and uses the authenticated principal's role and gym rather than trusting client-supplied ownership. Logo uploads accept PNG/JPEG/WebP content up to 2 MB, derive the extension from file bytes, and are served through an authenticated, tenant-checked endpoint. Configure persistent `LOGO_STORAGE_DIR` storage for deployed API instances.
 
 ## Supabase PostgreSQL
 
-Prisma connects to Supabase PostgreSQL using `DATABASE_URL`. Run `npm run db:deploy` to create the tables in a new, empty Supabase database, then run `npm run db:seed` to create the Super Admin. Changing the provider does not transfer data from an existing SQLite database; move any data you need with a deliberate export/import and reconciliation plan. Keep Supabase credentials on the server and use a least-privilege database role.
+Prisma connects to Supabase PostgreSQL using `DATABASE_URL` from the API service. Run `npm run db:deploy` to create the tables in a new, empty Supabase database, then run `npm run db:seed` to create the Super Admin. Configure `NEXT_PUBLIC_API_URL` on the web app at build time, and configure `CORS_ALLOWED_ORIGINS`, `SESSION_SECRET`, and `DATABASE_URL` on the API. For production subdomains, set `SESSION_COOKIE_DOMAIN` to their shared parent domain. Changing the provider does not transfer data from an existing SQLite database; move any data you need with a deliberate export/import and reconciliation plan. Keep Supabase credentials on the server and use a least-privilege database role.
 
 ## Verification
 
 ```powershell
 npm run typecheck
+npm run api:typecheck
 npm run lint
 npm test
 npm run build
+npm run api:build
 npm audit
 ```
 

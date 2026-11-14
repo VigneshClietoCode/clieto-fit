@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
 import DashboardClient from "./dashboard-client";
-import { getPrincipal } from "@/lib/auth";
+import { getPrincipalFromApi } from "@/lib/api-server";
 
 export default async function DashboardPage() {
-  const principal = await getPrincipal();
+  const principal = await getPrincipalFromApi();
   if (!principal) redirect("/login");
   return <DashboardClient principal={principal} />;
 }

@@ -46,13 +46,16 @@ export async function handleApiError(error: unknown): Promise<NextResponse> {
 }
 
 export function assertSameOrigin(request: Request): void {
+  if (request.headers.get("authorization")?.startsWith("Bearer ")) return;
   const origin = request.headers.get("origin");
-  const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
-  const host = forwardedHost ?? request.headers.get("host");
-  const forwardedProtocol = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
-  const protocol = forwardedProtocol ?? new URL(request.url).protocol.slice(0, -1);
-  const requestOrigin = host ? `${protocol}://${host}` : "";
-  if (!origin || origin !== requestOrigin) {
+  const allowedOrigins = process.env.CORS_ALLOWED_ORIGINS
+    ?.split(",")
+    .map((value) => value.trim())
+    .filter(Boolean) ?? [];
+  if (process.env.NODE_ENV !== "production" && allowedOrigins.length === 0) {
+    allowedOrigins.push("http://localhost:3000", "http://127.0.0.1:3000");
+  }
+  if (!origin || !allowedOrigins.includes(origin)) {
     throw new ApiError("Request origin could not be verified.", 403);
   }
 }

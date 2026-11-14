@@ -3,7 +3,8 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import type { Principal, Role } from "@/lib/auth";
+import { apiUrl } from "@/lib/api-url";
+import type { Principal, Role } from "@/lib/auth-types";
 
 type Module =
   | "overview"
@@ -158,9 +159,10 @@ async function apiRequest<T>(
   method = "GET",
   body?: unknown,
 ): Promise<T> {
-  const response = await fetch(url, {
+  const response = await fetch(apiUrl(url), {
     method,
     cache: "no-store",
+    credentials: "include",
     headers: body === undefined ? undefined : { "Content-Type": "application/json" },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
@@ -507,8 +509,9 @@ export default function DashboardClient({ principal }: { principal: Principal })
               onUpload={async (file) => {
                 const formData = new FormData();
                 formData.set("logo", file);
-                const response = await fetch("/api/branding", {
+                const response = await fetch(apiUrl("/api/branding"), {
                   method: "PUT",
+                  credentials: "include",
                   body: formData,
                   cache: "no-store",
                 });
@@ -971,7 +974,7 @@ function GymSettings({
       </section>
       <section className="section-card settings-card">
         <span className="card-kicker">GYM BRANDING</span><h2>A familiar welcome</h2><p className="muted">Upload a square PNG, JPEG, or WebP logo up to 2 MB. Only your gym can change this image.</p>
-        <div className="logo-preview">{gym?.logoUrl ? <Image src={`/api/branding/${gym.id}?v=${encodeURIComponent(gym.logoUrl)}`} alt={`${gym.name} logo`} width={96} height={96} unoptimized /> : <span>{gym?.name?.slice(0, 1).toUpperCase() ?? "C"}</span>}</div>
+        <div className="logo-preview">{gym?.logoUrl ? <Image src={apiUrl(`/api/branding/${gym.id}?v=${encodeURIComponent(gym.logoUrl)}`)} alt={`${gym.name} logo`} width={96} height={96} unoptimized /> : <span>{gym?.name?.slice(0, 1).toUpperCase() ?? "C"}</span>}</div>
         <div className="logo-actions"><label className="button button-outline upload-label">Choose logo<input type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => void upload(event)} disabled={working} /></label>{gym?.logoUrl && <button className="button button-quiet" onClick={() => void onRemoveLogo()}>Remove</button>}</div>
         {message && <p className="inline-feedback" role="status">{message}</p>}
       </section>

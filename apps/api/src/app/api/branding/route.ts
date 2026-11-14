@@ -13,7 +13,9 @@ import { NextResponse } from "next/server";
 
 const MAX_LOGO_BYTES = 2 * 1024 * 1024;
 const MAX_MULTIPART_BYTES = MAX_LOGO_BYTES + 64 * 1024;
-const logoDirectory = path.join(process.cwd(), "storage", "logos");
+const logoDirectory =
+  process.env.LOGO_STORAGE_DIR?.trim() ||
+  path.resolve(process.cwd(), "..", "..", "storage", "logos");
 
 function detectImage(bytes: Buffer): { extension: string; contentType: string } | null {
   if (
@@ -45,7 +47,7 @@ function isMissingFile(error: unknown): boolean {
 
 async function removeFile(fileName: string): Promise<void> {
   try {
-    await unlink(path.join(logoDirectory, fileName));
+    await unlink(path.join(/*turbopackIgnore: true*/ logoDirectory, fileName));
   } catch (error) {
     if (!isMissingFile(error)) throw error;
   }
@@ -106,7 +108,7 @@ export async function PUT(request: Request) {
 
     await mkdir(logoDirectory, { recursive: true });
     const fileName = `${randomUUID()}.${image.extension}`;
-    const filePath = path.join(logoDirectory, fileName);
+    const filePath = path.join(/*turbopackIgnore: true*/ logoDirectory, fileName);
     await writeFile(filePath, bytes, { flag: "wx", mode: 0o600 });
     let updated: { id: string; logoUrl: string | null };
     try {
