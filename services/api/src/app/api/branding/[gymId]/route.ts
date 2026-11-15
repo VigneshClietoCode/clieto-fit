@@ -1,11 +1,11 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { ApiError, handleApiError, requirePrincipal, requireRoles } from "@/lib/api";
+import { logoDirectory } from "@/lib/branding-storage";
 import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
 
 type RouteContext = { params: Promise<{ gymId: string }> };
-const logoDirectory = path.join(process.cwd(), "storage", "logos");
 
 function contentTypeFor(name: string | null): string | null {
   if (!name || !/^[0-9a-f-]{36}\.(png|jpg|webp)$/.test(name)) return null;

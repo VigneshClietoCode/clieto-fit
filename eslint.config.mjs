@@ -5,5 +5,16 @@ import nextTs from "eslint-config-next/typescript";
 export default defineConfig([
   ...nextCoreWebVitals,
   ...nextTs,
-  globalIgnores([".next/**", "apps/api/.next/**", "node_modules/**", "prisma/generated/**"]),
+  {
+    settings: {
+      next: { rootDir: ["apps/web/", "services/api/"] },
+    },
+  },
+  globalIgnores([
+    "**/.next/**",
+    "**/node_modules/**",
+    "**/prisma/generated/**",
+    "out/**",
+    "coverage/**",
+  ]),
 ]);

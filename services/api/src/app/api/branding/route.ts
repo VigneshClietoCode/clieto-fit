@@ -8,14 +8,12 @@ import {
   requirePrincipal,
   requireRoles,
 } from "@/lib/api";
+import { logoDirectory } from "@/lib/branding-storage";
 import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
 
 const MAX_LOGO_BYTES = 2 * 1024 * 1024;
 const MAX_MULTIPART_BYTES = MAX_LOGO_BYTES + 64 * 1024;
-const logoDirectory =
-  process.env.LOGO_STORAGE_DIR?.trim() ||
-  path.resolve(process.cwd(), "..", "..", "storage", "logos");
 
 function detectImage(bytes: Buffer): { extension: string; contentType: string } | null {
   if (

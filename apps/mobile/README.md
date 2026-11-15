@@ -6,14 +6,24 @@ not connect directly to PostgreSQL or Supabase.
 
 ## Requirements and setup
 
-Use Node.js 24.3+ (or 26+) and npm. From this directory:
+Use Node.js 24.3+ (or another version listed in this workspace's `engines`
+field) and npm. Expo SDK 58 does not support Node 25. From the repository root,
+install dependencies and start the API and Expo app in separate terminals:
 
 ```powershell
-Copy-Item .env.example .env
-# Set EXPO_PUBLIC_API_URL in .env to the API address reachable by your device.
 npm install
-npm run start
+npm run dev:api
 ```
+
+In another terminal:
+
+```powershell
+npm run dev:mobile
+```
+
+Before starting Expo, copy `apps/mobile/.env.example` to
+`apps/mobile/.env` and set `EXPO_PUBLIC_API_URL` to the API address reachable
+by your device.
 
 For local development, start the API from the repository root with
 `npm run api:dev`. Set `EXPO_PUBLIC_API_URL` to a host reachable from the mobile
@@ -29,9 +39,10 @@ development session. Use an HTTPS API URL for production builds.
 ## Run and validate
 
 ```powershell
-npm run android
-npm run ios
-npm run typecheck
+npm run android --workspace=@clieto-fit/mobile
+npm run ios --workspace=@clieto-fit/mobile
+npm run typecheck --workspace=@clieto-fit/mobile
+Set-Location apps\mobile
 npx expo-doctor
 ```
 

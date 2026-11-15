@@ -1,4 +1,9 @@
+import { config } from "dotenv";
+import path from "node:path";
 import type { NextConfig } from "next";
+
+const workspaceRoot = path.resolve(process.cwd(), "../..");
+config({ path: path.join(workspaceRoot, ".env") });
 
 const isDevelopment = process.env.NODE_ENV === "development";
 const apiOrigin = new URL(
@@ -19,6 +24,9 @@ const contentSecurityPolicy = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  outputFileTracingRoot: workspaceRoot,
+  transpilePackages: ["@clieto-fit/shared"],
+  turbopack: { root: workspaceRoot },
   async headers() {
     return [
       {

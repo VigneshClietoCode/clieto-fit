@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { db } from "../apps/api/src/lib/db";
+import { db } from "../src/lib/db";
 
 async function main() {
   const email = process.env.SEED_SUPER_ADMIN_EMAIL?.trim().toLowerCase();

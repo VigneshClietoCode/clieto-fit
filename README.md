@@ -4,7 +4,12 @@ A responsive gym-training portal with a Next.js web app and a separately deploya
 
 ## Local setup
 
-Requirements: Node.js 20.9 or newer and npm.
+Requirements: npm and a Node.js version supported by Expo, as listed in
+`apps/mobile/package.json`.
+
+The repository is an npm workspace: the web app is in `apps/web`, the Expo
+mobile app is in `apps/mobile`, the existing Next.js API is in `services/api`,
+and shared auth contracts are in `packages/shared`.
 
 1. Copy `.env.example` to `.env`. Set `DATABASE_URL` to your Supabase PostgreSQL connection string, a random `SESSION_SECRET` of at least 32 characters, and a Super Admin email, name, and password (at least 12 characters). Keep `.env` private.
 2. From the project directory, run:
@@ -22,7 +27,7 @@ Requirements: Node.js 20.9 or newer and npm.
    npm run dev
    ```
 
-   The web app runs at `http://localhost:3000` and the API at `http://localhost:3001`. To run them independently, use `npm run web:dev` and `npm run api:dev` in separate terminals.
+   The web app runs at `http://localhost:3000` and the API at `http://localhost:3001`. Start `npm run dev:api` in one terminal first, then `npm run dev:web` in a second terminal; the web app requires the API to be ready. Alternatively, `npm run dev` starts both services together.
 
 4. Visit `http://localhost:3000/login` and sign in to the **Super Admin** portal using the seed values from `.env`.
 5. Create a gym in **Gyms & accounts**, then create its Admin account. Admins can add members, assign fees, and manage gym operations.
@@ -50,7 +55,7 @@ All data-bearing APIs enforce role, gym, and (for members) record ownership on t
 
 ## API outline
 
-The standalone API service lives in `apps/api`; run it with `npm run api:dev` and build it with `npm run api:build`. The web app calls it at `NEXT_PUBLIC_API_URL`. Configure `CORS_ALLOWED_ORIGINS` on the API with the exact web origin(s). For production subdomains, set `SESSION_COOKIE_DOMAIN` to their shared parent domain so the web server can forward the HTTP-only session cookie during server rendering. Do not use wildcard CORS origins with credentials.
+The standalone API service lives in `services/api`; run it with `npm run dev:api` and build it with `npm run api:build`. Its Prisma schema and migrations live under `services/api/prisma`. The web app calls it at `NEXT_PUBLIC_API_URL`. Configure `CORS_ALLOWED_ORIGINS` on the API with the exact web origin(s). For production subdomains, set `SESSION_COOKIE_DOMAIN` to their shared parent domain so the web server can forward the HTTP-only session cookie during server rendering. Do not use wildcard CORS origins with credentials.
 
 - `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`
 - Mobile clients can send `"client": "mobile"` to the login endpoint to receive a bearer session token; include it as `Authorization: Bearer <token>` on subsequent requests and call logout to revoke it. Keep tokens in the platform's secure storage.
@@ -67,7 +72,7 @@ Every mutating route validates its input, checks the configured web origin for c
 
 ## Supabase PostgreSQL
 
-Prisma connects to Supabase PostgreSQL using `DATABASE_URL` from the API service. Run `npm run db:deploy` to create the tables in a new, empty Supabase database, then run `npm run db:seed` to create the Super Admin. Configure `NEXT_PUBLIC_API_URL` on the web app at build time, and configure `CORS_ALLOWED_ORIGINS`, `SESSION_SECRET`, and `DATABASE_URL` on the API. For production subdomains, set `SESSION_COOKIE_DOMAIN` to their shared parent domain. Changing the provider does not transfer data from an existing SQLite database; move any data you need with a deliberate export/import and reconciliation plan. Keep Supabase credentials on the server and use a least-privilege database role.
+Prisma connects to Supabase PostgreSQL using `DATABASE_URL` from the root `.env`. Run `npm run db:deploy` to create the tables in a new, empty Supabase database, then run `npm run db:seed` to create the Super Admin. Configure `NEXT_PUBLIC_API_URL` on the web app at build time, and configure `CORS_ALLOWED_ORIGINS`, `SESSION_SECRET`, and `DATABASE_URL` on the API. For production subdomains, set `SESSION_COOKIE_DOMAIN` to their shared parent domain. Changing the provider does not transfer data from an existing SQLite database; move any data you need with a deliberate export/import and reconciliation plan. Keep Supabase credentials on the server and use a least-privilege database role.
 
 ## Verification
 

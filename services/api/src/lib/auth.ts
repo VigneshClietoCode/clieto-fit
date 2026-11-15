@@ -1,13 +1,13 @@
 import { createHmac, randomBytes } from "node:crypto";
+import { SESSION_COOKIE_NAME } from "@clieto-fit/shared/session-constants";
+import type { Principal, Role } from "@clieto-fit/shared/auth-types";
 import { cookies, headers } from "next/headers";
 import { db } from "@/lib/db";
-import { SESSION_COOKIE_NAME } from "@/shared/session-constants";
 
 export const SESSION_COOKIE = SESSION_COOKIE_NAME;
 export const SESSION_DAYS = 7;
 
-export type { Principal, Role } from "@/shared/auth-types";
-import type { Principal, Role } from "@/shared/auth-types";
+export type { Principal, Role } from "@clieto-fit/shared/auth-types";
 
 function sessionSecret(): string {
   const value = process.env.SESSION_SECRET;

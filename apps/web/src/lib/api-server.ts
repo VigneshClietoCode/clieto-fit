@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
+import { SESSION_COOKIE_NAME } from "@clieto-fit/shared/session-constants";
+import type { Principal } from "@clieto-fit/shared/auth-types";
 import { apiUrl } from "@/lib/api-url";
-import { SESSION_COOKIE_NAME } from "@/lib/session-constants";
-import type { Principal } from "@/lib/auth-types";
 
 export async function getPrincipalFromApi(): Promise<Principal | null> {
   const token = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
