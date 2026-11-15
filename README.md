@@ -29,6 +29,10 @@ Requirements: Node.js 20.9 or newer and npm.
 
 `npm run db:deploy` applies the committed PostgreSQL migrations; `npm run db:seed` is safe to repeat and sets the account password to the current environment value. Use a Supabase direct or session-pooler connection for migrations; transaction-pooler connections are not suitable for Prisma Migrate. Logo uploads are stored privately under `storage/logos`, which is excluded from Git.
 
+## Mobile app
+
+The separate Android and iOS Expo / React Native project is in [`apps/mobile`](./apps/mobile/README.md). Configure its `EXPO_PUBLIC_API_URL` for the device or simulator, then start Expo with `npm run start` from that directory. The app uses the existing API and stores mobile bearer sessions with Expo SecureStore.
+
 ## Portals and capabilities
 
 - **Super Admin:** create and suspend gyms and gym accounts, configure the allow-listed platform settings, and review an audit trail for platform mutations. Member health plans and payment records are not included in platform summaries.
