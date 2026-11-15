@@ -6,8 +6,10 @@ const workspaceRoot = path.resolve(process.cwd(), "../..");
 config({ path: path.join(workspaceRoot, ".env") });
 
 const isDevelopment = process.env.NODE_ENV === "development";
+const apiUrl =
+  process.env.API_URL ?? (isDevelopment ? "http://localhost:3001" : "");
 const apiOrigin = new URL(
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001",
+  apiUrl || "http://localhost:3001",
 ).origin;
 const contentSecurityPolicy = [
   "default-src 'self'",
@@ -23,6 +25,7 @@ const contentSecurityPolicy = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  env: { API_URL: apiUrl },
   poweredByHeader: false,
   outputFileTracingRoot: workspaceRoot,
   transpilePackages: ["@clieto-fit/shared"],
