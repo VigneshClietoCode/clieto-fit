@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "concurrently --kill-others --names web,api \"npm run web:dev\" \"npm run api:dev\"",
     "web:dev": "next dev",
+    "dev:mobile": "npm --prefix apps/mobile run start -- --lan",
     "build": "prisma generate && next build",
     "start": "next start",
     "api:dev": "npm run dev --workspace @clieto-fit/api",

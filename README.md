@@ -31,7 +31,7 @@ Requirements: Node.js 20.9 or newer and npm.
 
 ## Mobile app
 
-The separate Android and iOS Expo / React Native project is in [`apps/mobile`](./apps/mobile/README.md). Configure its `EXPO_PUBLIC_API_URL` for the device or simulator, then start Expo with `npm run start` from that directory. The app uses the existing API and stores mobile bearer sessions with Expo SecureStore.
+The separate Android and iOS Expo / React Native project is in [`apps/mobile`](./apps/mobile/README.md). Configure `EXPO_PUBLIC_API_URL` in `apps/mobile/.env` for the device or simulator, then run `npm run dev:mobile` from the repository root to start Expo on the LAN and generate an Expo Go QR code. The app uses the existing API and stores mobile bearer sessions with Expo SecureStore.
 
 ## Portals and capabilities
 
