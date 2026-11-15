@@ -55,7 +55,7 @@ All data-bearing APIs enforce role, gym, and (for members) record ownership on t
 
 ## API outline
 
-The standalone API service lives in `services/api`; run it with `npm run dev:api` and build it with `npm run api:build`. Its Prisma schema and migrations live under `services/api/prisma`. The web app calls it at `NEXT_PUBLIC_API_URL`. Configure `CORS_ALLOWED_ORIGINS` on the API with the exact web origin(s). For production subdomains, set `SESSION_COOKIE_DOMAIN` to their shared parent domain so the web server can forward the HTTP-only session cookie during server rendering. Do not use wildcard CORS origins with credentials.
+The standalone API service lives in `services/api`; run it with `npm run dev:api` and build it with `npm run api:build`. Interactive Swagger UI is available at `http://localhost:3001/`, with the OpenAPI document at `http://localhost:3001/openapi.json`. Its Prisma schema and migrations live under `services/api/prisma`. The web app calls it at `NEXT_PUBLIC_API_URL`. Configure `CORS_ALLOWED_ORIGINS` on the API with the exact web origin(s). For production subdomains, set `SESSION_COOKIE_DOMAIN` to their shared parent domain so the web server can forward the HTTP-only session cookie during server rendering. Do not use wildcard CORS origins with credentials.
 
 - `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`
 - Mobile clients can send `"client": "mobile"` to the login endpoint to receive a bearer session token; include it as `Authorization: Bearer <token>` on subsequent requests and call logout to revoke it. Keep tokens in the platform's secure storage.

@@ -15,21 +15,23 @@
     "db:seed": "prisma db seed"
   },
   "dependencies": {
-    "@prisma/client": "^6.19.0",
     "@clieto-fit/shared": "1.0.0",
+    "@prisma/client": "^6.19.0",
     "bcryptjs": "^3.0.2",
     "dotenv": "^17.2.3",
     "next": "^16.0.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "swagger-ui-react": "^5.35.0",
     "zod": "^4.1.12"
   },
   "devDependencies": {
     "@types/node": "^24.10.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
+    "@types/swagger-ui-react": "^5.18.0",
     "prisma": "^6.19.0",
-    "typescript": "^5.9.3",
-    "tsx": "^4.20.6"
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
   }
 }
