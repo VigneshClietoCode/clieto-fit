@@ -7,10 +7,11 @@ config({ path: path.join(workspaceRoot, ".env") });
 
 const isDevelopment = process.env.NODE_ENV === "development";
 const apiUrl =
-  process.env.API_URL ?? (isDevelopment ? "http://localhost:3001" : "");
-const apiOrigin = new URL(
-  apiUrl || "http://localhost:3001",
-).origin;
+  process.env.API_URL ?? (isDevelopment ? "http://localhost:3001" : undefined);
+if (!apiUrl) {
+  throw new Error("API_URL must be configured before building the web app.");
+}
+const apiOrigin = new URL(apiUrl).origin;
 const contentSecurityPolicy = [
   "default-src 'self'",
   "base-uri 'self'",
