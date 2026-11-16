@@ -57,6 +57,10 @@ All data-bearing APIs enforce role, gym, and (for members) record ownership on t
 
 The standalone API service lives in `services/api`; run it with `npm run dev:api` and build it with `npm run api:build`. Interactive Swagger UI is available at `http://localhost:3001/`, with the OpenAPI document at `http://localhost:3001/openapi.json`. Its Prisma schema and migrations live under `services/api/prisma`. The web app calls it at `API_INTERNAL_URL`. Local development allows the localhost web origins by default. For production web clients, configure `CORS_ALLOWED_ORIGINS` on the API with the exact web origin(s). For production subdomains, set `SESSION_COOKIE_DOMAIN` to their shared parent domain so the web server can forward the HTTP-only session cookie during server rendering. Do not use wildcard CORS origins with credentials.
 
+For the Cloudflare web Worker, set the root directory to `apps/web`, the build command to `npx opennextjs-cloudflare build`, and the deploy command to `npx wrangler deploy`. Set `API_INTERNAL_URL` to the deployed API origin in the web app's Cloudflare environment.
+
+The API also has a Cloudflare build configuration. Set its project root directory to `services/api`, build command to `npm run build:cloudflare`, and deploy command to `npm run deploy:cloudflare`. Add `SUPABASE_URL`, `SESSION_SECRET`, and `CORS_ALLOWED_ORIGINS` as Cloudflare variables/secrets. This enables the OpenNext build and Worker packaging; before serving production traffic, migrate logo storage from the local filesystem to durable object storage and configure Prisma for a Cloudflare-compatible database connection.
+
 - `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`
 - Mobile clients can send `"client": "mobile"` to the login endpoint to receive a bearer session token; include it as `Authorization: Bearer <token>` on subsequent requests and call logout to revoke it. Keep tokens in the platform's secure storage.
 - `GET /api/health` (service and database readiness)

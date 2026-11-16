@@ -17,6 +17,7 @@
     "api:dev": "npm run dev:api",
     "build": "npm run build:web && npm run api:build",
     "build:web": "npm run build --workspace=@clieto-fit/web",
+    "deploy:web": "npm run deploy --workspace=@clieto-fit/web",
     "api:build": "npm run build --workspace=@clieto-fit/api",
     "start": "npm run start --workspace=@clieto-fit/web",
     "api:start": "npm run start --workspace=@clieto-fit/api",
