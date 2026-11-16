@@ -9,6 +9,11 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
+  "vars": {
+    "WEB_ORIGIN": "https://api.clietocode.com/",
+    "SUPABASE_URL": "https://mnnlzldnqzivwkjopslr.supabase.co",
+    "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ubmx6bGRucXppdndram9wc2xyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ1ODU0NjEsImV4cCI6MjExMDE2MTQ2MX0.C6YihSKkvaUUrl3PozFX_HdlVXywhY5KOLMSKsnm-6s"
+  },
   "services": [
     {
       "binding": "WORKER_SELF_REFERENCE",
