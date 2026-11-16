@@ -6,10 +6,10 @@ const workspaceRoot = path.resolve(process.cwd(), "../..");
 config({ path: path.join(workspaceRoot, ".env") });
 
 const isDevelopment = process.env.NODE_ENV === "development";
-const apiUrl =
-  process.env.API_INTERNAL_URL ?? (isDevelopment ? "http://localhost:3001" : undefined);
-if (!apiUrl) {
-  throw new Error("API_INTERNAL_URL must be configured before building the web app.");
+const fallbackApiUrl = "http://localhost:3001";
+const apiUrl = process.env.API_INTERNAL_URL ?? fallbackApiUrl;
+if (!process.env.API_INTERNAL_URL) {
+  console.warn("API_INTERNAL_URL is not configured; using localhost:3001 for this build.");
 }
 const apiOrigin = new URL(apiUrl).origin;
 const contentSecurityPolicy = [
