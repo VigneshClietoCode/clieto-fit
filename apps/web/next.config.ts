@@ -7,9 +7,9 @@ config({ path: path.join(workspaceRoot, ".env") });
 
 const isDevelopment = process.env.NODE_ENV === "development";
 const apiUrl =
-  process.env.API_URL ?? (isDevelopment ? "http://localhost:3001" : undefined);
+  process.env.API_INTERNAL_URL ?? (isDevelopment ? "http://localhost:3001" : undefined);
 if (!apiUrl) {
-  throw new Error("API_URL must be configured before building the web app.");
+  throw new Error("API_INTERNAL_URL must be configured before building the web app.");
 }
 const apiOrigin = new URL(apiUrl).origin;
 const contentSecurityPolicy = [
@@ -26,7 +26,7 @@ const contentSecurityPolicy = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
-  env: { API_URL: apiUrl },
+  env: { API_INTERNAL_URL: apiUrl },
   poweredByHeader: false,
   outputFileTracingRoot: workspaceRoot,
   transpilePackages: ["@clieto-fit/shared"],
