@@ -99,6 +99,16 @@ type PlatformData = {
   }>;
 };
 
+class ApiRequestError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+    this.name = "ApiRequestError";
+  }
+}
+
 const navigation: Record<Role, Array<{ id: Module; label: string; icon: string }>> = {
   SUPER_ADMIN: [
     { id: "overview", label: "Overview", icon: "⌂" },
@@ -167,7 +177,12 @@ async function apiRequest<T>(
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const result = (await response.json()) as T & { error?: string };
-  if (!response.ok) throw new Error(result.error ?? "The request could not be completed.");
+  if (!response.ok) {
+    throw new ApiRequestError(
+      result.error ?? "The request could not be completed.",
+      response.status,
+    );
+  }
   return result;
 }
 
@@ -198,21 +213,75 @@ function moduleForResource(module: Module): string | null {
     : null;
 }
 
-export default function DashboardClient({ principal }: { principal: Principal }) {
+export default function DashboardClient() {
+  const router = useRouter();
+  const [initialPortal, setInitialPortal] = useState<PortalData | null>(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    async function checkSession() {
+      try {
+        const data = await apiRequest<PortalData>("/api/portal");
+        if (active) setInitialPortal(data);
+      } catch (requestError) {
+        if (!active) return;
+        if (requestError instanceof ApiRequestError && requestError.status === 401) {
+          router.replace("/login");
+          return;
+        }
+        setError(
+          requestError instanceof Error
+            ? requestError.message
+            : "Unable to verify your session.",
+        );
+      }
+    }
+    void checkSession();
+    return () => {
+      active = false;
+    };
+  }, [router]);
+
+  if (!initialPortal) {
+    return (
+      <main className="loading-screen" role={error ? "alert" : undefined}>
+        {!error && <span className="spinner" />}
+        {error || "Checking your session..."}
+      </main>
+    );
+  }
+
+  return (
+    <DashboardWorkspace
+      key={initialPortal.user.id}
+      principal={initialPortal.user}
+      initialPortal={initialPortal}
+    />
+  );
+}
+
+function DashboardWorkspace({
+  principal,
+  initialPortal,
+}: {
+  principal: Principal;
+  initialPortal: PortalData;
+}) {
   const router = useRouter();
   const [active, setActive] = useState<Module>("overview");
-  const [portal, setPortal] = useState<PortalData | null>(null);
+  const [portal, setPortal] = useState<PortalData | null>(initialPortal);
   const [records, setRecords] = useState<Row[]>([]);
   const [memberOptions, setMemberOptions] = useState<Row[]>([]);
   const [feeOptions, setFeeOptions] = useState<Row[]>([]);
   const [platform, setPlatform] = useState<PlatformData | null>(null);
-  const [gymSettings, setGymSettings] = useState<GymInfo | null>(null);
+  const [gymSettings, setGymSettings] = useState<GymInfo | null>(initialPortal.gym ?? null);
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [editing, setEditing] = useState<Row | null>(null);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(principal.role === "SUPER_ADMIN");
 
   const loadPortal = useCallback(async () => {
     const data = await apiRequest<PortalData>("/api/portal");
@@ -259,7 +328,6 @@ export default function DashboardClient({ principal }: { principal: Principal })
     let activeEffect = true;
     async function initialLoad() {
       try {
-        await loadPortal();
         if (principal.role === "SUPER_ADMIN") await loadPlatform();
       } catch (requestError) {
         if (activeEffect) setError(requestError instanceof Error ? requestError.message : "Unable to load your portal.");
@@ -269,7 +337,7 @@ export default function DashboardClient({ principal }: { principal: Principal })
     }
     void initialLoad();
     return () => { activeEffect = false; };
-  }, [loadPlatform, loadPortal, principal.role]);
+  }, [loadPlatform, principal.role]);
 
   const activeFees = useMemo(() => feeOptions.filter((fee) => fee.active), [feeOptions]);
   const nav = navigation[principal.role];
