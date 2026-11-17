@@ -18,10 +18,12 @@
   },
   "dependencies": {
     "@clieto-fit/shared": "1.0.0",
+    "@prisma/adapter-pg": "^6.19.3",
     "@prisma/client": "^6.19.0",
     "bcryptjs": "^3.0.2",
     "dotenv": "^17.2.3",
     "next": "^16.0.0",
+    "pg": "^8.23.1",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "swagger-ui-react": "^5.35.0",
@@ -30,6 +32,7 @@
   "devDependencies": {
     "@opennextjs/cloudflare": "^1.20.17",
     "@types/node": "^24.10.0",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@types/swagger-ui-react": "^5.18.0",
