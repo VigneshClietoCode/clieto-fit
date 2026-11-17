@@ -13,6 +13,12 @@ test("cookie-authenticated writes require an allowed web origin", () => {
         headers: { origin: "https://web.example.com" },
       })),
     );
+    assert.doesNotThrow(() =>
+      assertSameOrigin(new Request("https://api.example.com/api/auth/login", {
+        method: "POST",
+        headers: { origin: "https://api.example.com" },
+      })),
+    );
     assert.throws(
       () =>
         assertSameOrigin(new Request("https://api.example.com/api/account", {

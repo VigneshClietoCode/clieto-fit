@@ -55,7 +55,8 @@ export function assertSameOrigin(request: Request): void {
   if (process.env.NODE_ENV !== "production" && allowedOrigins.length === 0) {
     allowedOrigins.push("http://localhost:3000", "http://127.0.0.1:3000");
   }
-  if (!origin || !allowedOrigins.includes(origin)) {
+  const requestOrigin = new URL(request.url).origin;
+  if (!origin || (origin !== requestOrigin && !allowedOrigins.includes(origin))) {
     throw new ApiError("Request origin could not be verified.", 403);
   }
 }
