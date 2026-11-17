@@ -12,7 +12,8 @@
   "vars": {
     "API_INTERNAL_URL": "https://clieto-fit-api.hari-41c.workers.dev",
     "SUPABASE_URL": "https://mnnlzldnqzivwkjopslr.supabase.co",
-    "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ubmx6bGRucXppdndram9wc2xyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ1ODU0NjEsImV4cCI6MjExMDE2MTQ2MX0.C6YihSKkvaUUrl3PozFX_HdlVXywhY5KOLMSKsnm-6s"
+    "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ubmx6bGRucXppdndram9wc2xyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ1ODU0NjEsImV4cCI6MjExMDE2MTQ2MX0.C6YihSKkvaUUrl3PozFX_HdlVXywhY5KOLMSKsnm-6s",
+    "SESSION_SECRET": "f3e139294a0a16677f29e84a9be5c21809b1a3f5ceaf9a64d80724fc9a045d3a"
   },
   "services": [
     {
