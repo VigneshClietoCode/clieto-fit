@@ -15,7 +15,7 @@
   "services": [
     {
       "binding": "WORKER_SELF_REFERENCE",
-      "service": "clieto-fit-web"
+      "service": "clietofit-web"
     }
   ],
   "observability": {
