@@ -2,7 +2,6 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import {
   ApiError,
-  assertSameOrigin,
   handleApiError,
   readJson,
   requirePrincipal,
@@ -23,7 +22,6 @@ const updateSchema = z.object({
 
 export async function PATCH(request: Request) {
   try {
-    assertSameOrigin(request);
     const principal = await requirePrincipal();
     const input = updateSchema.parse(await readJson(request));
     if (input.newPassword && input.currentPassword) {

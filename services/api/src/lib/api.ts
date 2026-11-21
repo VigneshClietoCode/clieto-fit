@@ -45,22 +45,6 @@ export async function handleApiError(error: unknown): Promise<NextResponse> {
   );
 }
 
-export function assertSameOrigin(request: Request): void {
-  if (request.headers.get("authorization")?.startsWith("Bearer ")) return;
-  const origin = request.headers.get("origin");
-  const allowedOrigins = process.env.CORS_ALLOWED_ORIGINS
-    ?.split(",")
-    .map((value) => value.trim())
-    .filter(Boolean) ?? [];
-  if (process.env.NODE_ENV !== "production" && allowedOrigins.length === 0) {
-    allowedOrigins.push("http://localhost:3000", "http://127.0.0.1:3000");
-  }
-  const requestOrigin = new URL(request.url).origin;
-  if (!origin || (origin !== requestOrigin && !allowedOrigins.includes(origin))) {
-    throw new ApiError("Request origin could not be verified.", 403);
-  }
-}
-
 export async function readJson(request: Request): Promise<unknown> {
   try {
     return await request.json();

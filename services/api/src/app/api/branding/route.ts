@@ -3,7 +3,6 @@ import { mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import {
   ApiError,
-  assertSameOrigin,
   handleApiError,
   requirePrincipal,
   requireRoles,
@@ -88,7 +87,6 @@ async function readLogoForm(request: Request): Promise<FormData> {
 
 export async function PUT(request: Request) {
   try {
-    assertSameOrigin(request);
     const principal = await requirePrincipal();
     requireRoles(principal, ["ADMIN"]);
     if (!principal.gymId) throw new ApiError("Gym access is required.", 403);
@@ -143,7 +141,6 @@ export async function PUT(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    assertSameOrigin(request);
     const principal = await requirePrincipal();
     requireRoles(principal, ["ADMIN"]);
     if (!principal.gymId) throw new ApiError("Gym access is required.", 403);

@@ -2,7 +2,6 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import {
   ApiError,
-  assertSameOrigin,
   handleApiError,
   readJson,
   requirePrincipal,
@@ -85,7 +84,6 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    assertSameOrigin(request);
     const principal = await requirePrincipal();
     requireRoles(principal, ["SUPER_ADMIN"]);
     const body = await readJson(request);
@@ -193,7 +191,6 @@ const patchSchema = z.discriminatedUnion("target", [
 
 export async function PATCH(request: Request) {
   try {
-    assertSameOrigin(request);
     const principal = await requirePrincipal();
     requireRoles(principal, ["SUPER_ADMIN"]);
     const input = patchSchema.parse(await readJson(request));

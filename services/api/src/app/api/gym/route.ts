@@ -1,7 +1,6 @@
 import { z } from "zod";
 import {
   ApiError,
-  assertSameOrigin,
   handleApiError,
   readJson,
   requirePrincipal,
@@ -33,7 +32,6 @@ const updateSchema = z.object({
 
 export async function PATCH(request: Request) {
   try {
-    assertSameOrigin(request);
     const principal = await requirePrincipal();
     requireRoles(principal, ["ADMIN"]);
     if (!principal.gymId) throw new ApiError("Gym access is required.", 403);

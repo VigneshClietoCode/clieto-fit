@@ -9,9 +9,6 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
-  "vars": {
-    "CORS_ALLOWED_ORIGINS": "https://clieto-fit-web.hari-41c.workers.dev"
-  },
   "services": [
     {
       "binding": "WORKER_SELF_REFERENCE",

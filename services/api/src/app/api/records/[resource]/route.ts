@@ -2,7 +2,6 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import {
   ApiError,
-  assertSameOrigin,
   handleApiError,
   readJson,
   requirePrincipal,
@@ -189,7 +188,6 @@ export async function GET(_request: Request, context: RouteContext) {
 
 export async function POST(request: Request, context: RouteContext) {
   try {
-    assertSameOrigin(request);
     const principal = await requirePrincipal();
     requireRoles(principal, ["ADMIN", "USER"]);
     const resource = parseResource((await context.params).resource);

@@ -2,7 +2,6 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import {
   ApiError,
-  assertSameOrigin,
   handleApiError,
   readJson,
   requirePrincipal,
@@ -72,7 +71,6 @@ const equipmentUpdateSchema = z
 
 export async function PATCH(request: Request, context: RouteContext) {
   try {
-    assertSameOrigin(request);
     const principal = await requirePrincipal();
     requireRoles(principal, ["ADMIN"]);
     const { resource, id } = await context.params;
@@ -180,7 +178,6 @@ export async function PATCH(request: Request, context: RouteContext) {
 
 export async function DELETE(request: Request, context: RouteContext) {
   try {
-    assertSameOrigin(request);
     const principal = await requirePrincipal();
     requireRoles(principal, ["ADMIN"]);
     const { resource, id } = await context.params;

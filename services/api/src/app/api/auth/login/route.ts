@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import { createHash } from "node:crypto";
 import { z } from "zod";
-import { ApiError, assertSameOrigin, handleApiError, readJson } from "@/lib/api";
+import { ApiError, handleApiError, readJson } from "@/lib/api";
 import { createBearerSession, createSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
@@ -45,7 +45,6 @@ function enforceLoginLimit(key: string): void {
 export async function POST(request: Request) {
   try {
     const input = credentialsSchema.parse(await readJson(request));
-    if (input.client === "web") assertSameOrigin(request);
     const key = rateLimitKey(input.email);
     enforceLoginLimit(key);
     const user = await db.user.findUnique({
