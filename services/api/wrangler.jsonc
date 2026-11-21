@@ -3,7 +3,11 @@
   "name": "clietofit-api",
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-11-15",
-  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "compatibility_flags": [
+    "nodejs_compat",
+    "global_fetch_strictly_public",
+    "no_handle_cross_request_promise_resolution"
+  ],
   "workers_dev": true,
   "assets": {
     "directory": ".open-next/assets",
