@@ -6,7 +6,7 @@
     "dev": "next dev -p 3001",
     "build": "prisma generate && next build",
     "build:cloudflare": "prisma generate && opennextjs-cloudflare build",
-    "deploy:cloudflare": "wrangler deploy",
+    "deploy:cloudflare": "wrangler deploy --config wrangler.jsonc",
     "start": "next start -p 3001",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test src/lib/policies.test.ts src/proxy.test.ts",
