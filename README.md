@@ -1,6 +1,6 @@
 # Clieto Fit
 
-A responsive gym-training portal with a Next.js web app and a separately deployable REST API service, plus tenant-scoped Super Admin, Gym Admin/Trainer, and Member experiences. The API is the authority for authentication, permissions, and gym ownership; clients never access Prisma or the database directly.
+A responsive gym-training portal with a Next.js web app and a separately deployable REST API service, plus tenant-scoped Super Admin, Gym Admin/Trainer, and Member experiences. The API is the authority for authentication, permissions, and gym ownership; clients never access Prisma or the database directly..
 
 ## Local setup
 
