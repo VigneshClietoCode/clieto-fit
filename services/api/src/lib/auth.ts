@@ -71,27 +71,33 @@ export async function getPrincipal(): Promise<Principal | null> {
 
   const session = await db.session.findUnique({
     where: { tokenHash: tokenDigest(token) },
-    include: { user: { include: { gym: true } } },
+    select: { id: true, userId: true, expiresAt: true },
   });
   if (!session) return null;
-  if (session.expiresAt <= new Date() || session.user.status !== "ACTIVE") {
+
+  const user = await db.user.findUnique({
+    where: { id: session.userId },
+    include: { gym: true },
+  });
+  if (!user) return null;
+  if (session.expiresAt <= new Date() || user.status !== "ACTIVE") {
     await db.session.deleteMany({ where: { id: session.id } });
     return null;
   }
-  if (session.user.role !== "SUPER_ADMIN" && session.user.gym?.status !== "ACTIVE") {
+  if (user.role !== "SUPER_ADMIN" && user.gym?.status !== "ACTIVE") {
     return null;
   }
-  if (!["SUPER_ADMIN", "ADMIN", "USER"].includes(session.user.role)) return null;
+  if (!["SUPER_ADMIN", "ADMIN", "USER"].includes(user.role)) return null;
 
   return {
-    id: session.user.id,
-    email: session.user.email,
-    name: session.user.name,
-    role: session.user.role as Role,
-    gymId: session.user.gymId,
-    gymName: session.user.gym?.name ?? null,
-    gymTimezone: session.user.gym?.timezone ?? null,
-    feeId: session.user.feeId,
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    role: user.role as Role,
+    gymId: user.gymId,
+    gymName: user.gym?.name ?? null,
+    gymTimezone: user.gym?.timezone ?? null,
+    feeId: user.feeId,
   };
 }
 

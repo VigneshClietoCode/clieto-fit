@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { readApiJson } from "@/lib/api-response";
 import { apiUrl } from "@/lib/api-url";
 
 const portals = [
@@ -30,7 +31,7 @@ export default function LoginForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password, portal }),
       });
-      const result = (await response.json()) as { error?: string; redirectTo?: string };
+      const result = await readApiJson<{ error?: string; redirectTo?: string }>(response);
       if (!response.ok) throw new Error(result.error ?? "Unable to sign in.");
       router.replace(result.redirectTo ?? "/dashboard");
       router.refresh();

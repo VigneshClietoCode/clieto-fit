@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { SESSION_COOKIE_NAME } from "@clieto-fit/shared/session-constants";
 import type { Principal } from "@clieto-fit/shared/auth-types";
+import { readApiJson } from "@/lib/api-response";
 import { apiServerUrl } from "@/lib/api-server-url";
 
 export async function getPrincipalFromApi(): Promise<Principal | null> {
@@ -15,6 +16,6 @@ export async function getPrincipalFromApi(): Promise<Principal | null> {
   if (!response.ok) {
     throw new Error(`The API session check failed with status ${response.status}.`);
   }
-  const result = (await response.json()) as { user: Principal };
+  const result = await readApiJson<{ user: Principal }>(response);
   return result.user;
 }

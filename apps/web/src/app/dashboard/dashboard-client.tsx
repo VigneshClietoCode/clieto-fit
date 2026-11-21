@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type { Principal, Role } from "@clieto-fit/shared/auth-types";
+import { readApiJson } from "@/lib/api-response";
 import { apiUrl } from "@/lib/api-url";
 
 type Module =
@@ -176,7 +177,7 @@ async function apiRequest<T>(
     headers: body === undefined ? undefined : { "Content-Type": "application/json" },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
-  const result = (await response.json()) as T & { error?: string };
+  const result = await readApiJson<T & { error?: string }>(response);
   if (!response.ok) {
     throw new ApiRequestError(
       result.error ?? "The request could not be completed.",
@@ -583,7 +584,7 @@ function DashboardWorkspace({
                   body: formData,
                   cache: "no-store",
                 });
-                const result = (await response.json()) as { logoUrl?: string; warning?: string; error?: string };
+                const result = await readApiJson<{ logoUrl?: string; warning?: string; error?: string }>(response);
                 if (!response.ok) throw new Error(result.error ?? "Logo upload failed.");
                 await loadPortal();
                 setNotice(result.warning ?? "Gym logo updated.");
