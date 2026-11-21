@@ -7,6 +7,7 @@ const allowedOrigins = new Set([
 
 function addCorsHeaders(response: Response, origin: string | null): Response {
   response.headers.append("Vary", "Origin");
+  response.headers.set("Cache-Control", "no-store");
   if (!origin || !allowedOrigins.has(origin)) return response;
 
   response.headers.set("Access-Control-Allow-Origin", origin);

@@ -15,6 +15,7 @@ test("allows credentialed CORS requests from the production web origin", () => {
   assert.equal(response.headers.get("Access-Control-Allow-Origin"), webOrigin);
   assert.equal(response.headers.get("Access-Control-Allow-Credentials"), "true");
   assert.match(response.headers.get("Vary") ?? "", /Origin/);
+  assert.equal(response.headers.get("Cache-Control"), "no-store");
 });
 
 test("does not grant CORS permission to other origins", () => {
@@ -26,6 +27,7 @@ test("does not grant CORS permission to other origins", () => {
 
   assert.equal(response.headers.get("Access-Control-Allow-Origin"), null);
   assert.equal(response.headers.get("Access-Control-Allow-Credentials"), null);
+  assert.equal(response.headers.get("Cache-Control"), "no-store");
 });
 
 test("answers allowed-origin preflight requests", () => {
