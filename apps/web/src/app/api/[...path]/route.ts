@@ -18,12 +18,23 @@ async function proxyApiRequest(request: NextRequest, { params }: RouteContext): 
     request.method === "GET" || request.method === "HEAD"
       ? undefined
       : await request.arrayBuffer();
-  const response = await fetch(target, {
+  const fetchOptions: RequestInit = {
     method: request.method,
     headers,
     body: requestBody?.byteLength ? requestBody : undefined,
     cache: "no-store",
-  });
+  };
+  let response = await fetch(target, fetchOptions);
+  if (
+    request.method === "GET" &&
+    path.length === 1 &&
+    path[0] === "portal" &&
+    response.status >= 500
+  ) {
+    await response.body?.cancel();
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    response = await fetch(target, fetchOptions);
+  }
   const responseHeaders = new Headers(response.headers);
   for (const header of ["connection", "content-encoding", "content-length", "transfer-encoding"]) {
     responseHeaders.delete(header);
