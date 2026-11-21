@@ -1,12 +1,19 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+const allowedOrigins = new Set([
+  "https://clietofit.clietocode.com",
+  "http://localhost:3000",
+]);
+
 function addCorsHeaders(response: Response, origin: string | null): Response {
-  response.headers.set("Access-Control-Allow-Origin", origin ?? "*");
+  response.headers.append("Vary", "Origin");
+  if (!origin || !allowedOrigins.has(origin)) return response;
+
+  response.headers.set("Access-Control-Allow-Origin", origin);
   response.headers.set("Access-Control-Allow-Credentials", "true");
   response.headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
   response.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
   response.headers.set("Access-Control-Max-Age", "600");
-  if (origin) response.headers.append("Vary", "Origin");
   return response;
 }
 
