@@ -10,7 +10,7 @@
     "binding": "ASSETS"
   },
   "vars": {
-    "API_INTERNAL_URL": "https://clietofit-api.hari-41c.workers.dev"
+    "API_INTERNAL_URL": "https://api.clietofit.clietocode.com"
   },
   "services": [
     {
