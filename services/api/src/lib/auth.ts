@@ -59,10 +59,10 @@ async function requestSessionToken(): Promise<string | undefined> {
 
 export async function clearSession(): Promise<void> {
   const token = await requestSessionToken();
+  (await cookies()).delete(SESSION_COOKIE);
   if (token) {
     await db.session.deleteMany({ where: { tokenHash: tokenDigest(token) } });
   }
-  (await cookies()).delete(SESSION_COOKIE);
 }
 
 export async function getPrincipal(): Promise<Principal | null> {
