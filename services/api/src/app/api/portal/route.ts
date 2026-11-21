@@ -1,9 +1,9 @@
 import { handleApiError, requirePrincipal } from "@/lib/api";
-import { db } from "@/lib/db";
+import { db, withDatabaseRoute } from "@/lib/db";
 import { billingMonthForTimeZone, isPaymentFullyPaid, localDateForTimeZone } from "@/lib/policies";
 import { NextResponse } from "next/server";
 
-export async function GET() {
+async function getPortal() {
   try {
     const principal = await requirePrincipal();
 
@@ -119,3 +119,5 @@ export async function GET() {
     return handleApiError(error);
   }
 }
+
+export const GET = withDatabaseRoute(getPortal);

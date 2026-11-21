@@ -1,8 +1,9 @@
 import { handleApiError } from "@/lib/api";
 import { clearSession } from "@/lib/auth";
+import { withDatabaseRoute } from "@/lib/db";
 import { NextResponse } from "next/server";
 
-export async function POST() {
+async function logout() {
   try {
     await clearSession();
     return NextResponse.json({ ok: true });
@@ -10,3 +11,5 @@ export async function POST() {
     return handleApiError(error);
   }
 }
+
+export const POST = withDatabaseRoute(logout);

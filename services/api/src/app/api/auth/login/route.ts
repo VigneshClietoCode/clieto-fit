@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { z } from "zod";
 import { ApiError, handleApiError, readJson } from "@/lib/api";
 import { createBearerSession, createSession } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { db, withDatabaseRoute } from "@/lib/db";
 import { NextResponse } from "next/server";
 
 const credentialsSchema = z.object({
@@ -42,7 +42,7 @@ function enforceLoginLimit(key: string): void {
   current.count += 1;
 }
 
-export async function POST(request: Request) {
+async function login(request: Request) {
   try {
     const input = credentialsSchema.parse(await readJson(request));
     const key = rateLimitKey(input.email);
@@ -89,3 +89,5 @@ export async function POST(request: Request) {
     return handleApiError(error);
   }
 }
+
+export const POST = withDatabaseRoute(login);

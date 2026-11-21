@@ -7,7 +7,7 @@ import {
   requirePrincipal,
   requireRoles,
 } from "@/lib/api";
-import { db } from "@/lib/db";
+import { db, withDatabaseRoute } from "@/lib/db";
 import { NextResponse } from "next/server";
 
 type RouteContext = { params: Promise<{ resource: string; id: string }> };
@@ -69,7 +69,7 @@ const equipmentUpdateSchema = z
   })
   .refine((value) => Object.keys(value).length > 0);
 
-export async function PATCH(request: Request, context: RouteContext) {
+async function updateRecord(request: Request, context: RouteContext) {
   try {
     const principal = await requirePrincipal();
     requireRoles(principal, ["ADMIN"]);
@@ -176,7 +176,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 }
 
-export async function DELETE(request: Request, context: RouteContext) {
+async function deleteRecord(request: Request, context: RouteContext) {
   try {
     const principal = await requirePrincipal();
     requireRoles(principal, ["ADMIN"]);
@@ -210,3 +210,6 @@ export async function DELETE(request: Request, context: RouteContext) {
     return handleApiError(error);
   }
 }
+
+export const PATCH = withDatabaseRoute(updateRecord);
+export const DELETE = withDatabaseRoute(deleteRecord);

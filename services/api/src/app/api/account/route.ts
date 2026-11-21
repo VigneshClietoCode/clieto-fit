@@ -7,7 +7,7 @@ import {
   requirePrincipal,
 } from "@/lib/api";
 import { createSession } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { db, withDatabaseRoute } from "@/lib/db";
 import { NextResponse } from "next/server";
 
 const updateSchema = z.object({
@@ -20,7 +20,7 @@ const updateSchema = z.object({
   { message: "Enter your current password to set a new password." },
 );
 
-export async function PATCH(request: Request) {
+async function updateAccount(request: Request) {
   try {
     const principal = await requirePrincipal();
     const input = updateSchema.parse(await readJson(request));
@@ -50,3 +50,5 @@ export async function PATCH(request: Request) {
     return handleApiError(error);
   }
 }
+
+export const PATCH = withDatabaseRoute(updateAccount);

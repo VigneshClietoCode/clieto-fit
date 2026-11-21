@@ -6,10 +6,10 @@ import {
   requirePrincipal,
   requireRoles,
 } from "@/lib/api";
-import { db } from "@/lib/db";
+import { db, withDatabaseRoute } from "@/lib/db";
 import { NextResponse } from "next/server";
 
-export async function GET() {
+async function getGym() {
   try {
     const principal = await requirePrincipal();
     requireRoles(principal, ["ADMIN"]);
@@ -30,7 +30,7 @@ const updateSchema = z.object({
   timezone: z.string().trim().min(1).max(80).optional(),
 }).refine((value) => value.name || value.timezone);
 
-export async function PATCH(request: Request) {
+async function updateGym(request: Request) {
   try {
     const principal = await requirePrincipal();
     requireRoles(principal, ["ADMIN"]);
@@ -53,3 +53,6 @@ export async function PATCH(request: Request) {
     return handleApiError(error);
   }
 }
+
+export const GET = withDatabaseRoute(getGym);
+export const PATCH = withDatabaseRoute(updateGym);

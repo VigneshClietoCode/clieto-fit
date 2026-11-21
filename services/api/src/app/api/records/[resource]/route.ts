@@ -7,7 +7,7 @@ import {
   requirePrincipal,
   requireRoles,
 } from "@/lib/api";
-import { db } from "@/lib/db";
+import { db, withDatabaseRoute } from "@/lib/db";
 import { localDateForTimeZone } from "@/lib/policies";
 import { NextResponse } from "next/server";
 
@@ -173,7 +173,7 @@ const equipmentSchema = z.object({
   description: z.string().trim().max(2000).default(""),
 });
 
-export async function GET(_request: Request, context: RouteContext) {
+async function getRecords(_request: Request, context: RouteContext) {
   try {
     const principal = await requirePrincipal();
     requireRoles(principal, ["ADMIN", "USER"]);
@@ -186,7 +186,7 @@ export async function GET(_request: Request, context: RouteContext) {
   }
 }
 
-export async function POST(request: Request, context: RouteContext) {
+async function createRecord(request: Request, context: RouteContext) {
   try {
     const principal = await requirePrincipal();
     requireRoles(principal, ["ADMIN", "USER"]);
@@ -290,3 +290,6 @@ export async function POST(request: Request, context: RouteContext) {
     return handleApiError(error);
   }
 }
+
+export const GET = withDatabaseRoute(getRecords);
+export const POST = withDatabaseRoute(createRecord);

@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { ApiError, handleApiError, requirePrincipal, requireRoles } from "@/lib/api";
 import { logoDirectory } from "@/lib/branding-storage";
-import { db } from "@/lib/db";
+import { db, withDatabaseRoute } from "@/lib/db";
 import { NextResponse } from "next/server";
 
 type RouteContext = { params: Promise<{ gymId: string }> };
@@ -14,7 +14,7 @@ function contentTypeFor(name: string | null): string | null {
   return "image/webp";
 }
 
-export async function GET(_request: Request, context: RouteContext) {
+async function getGymBranding(_request: Request, context: RouteContext) {
   try {
     const principal = await requirePrincipal();
     requireRoles(principal, ["SUPER_ADMIN", "ADMIN", "USER"]);
@@ -42,3 +42,5 @@ export async function GET(_request: Request, context: RouteContext) {
     return handleApiError(error);
   }
 }
+
+export const GET = withDatabaseRoute(getGymBranding);

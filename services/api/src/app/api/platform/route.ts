@@ -7,7 +7,7 @@ import {
   requirePrincipal,
   requireRoles,
 } from "@/lib/api";
-import { db } from "@/lib/db";
+import { db, withDatabaseRoute } from "@/lib/db";
 import { NextResponse } from "next/server";
 
 const createGymSchema = z.object({
@@ -30,7 +30,7 @@ const settingSchema = z.discriminatedUnion("key", [
   z.object({ key: z.literal("maintenance_mode"), value: z.enum(["true", "false"]) }),
 ]);
 
-export async function GET() {
+async function getPlatform() {
   try {
     const principal = await requirePrincipal();
     requireRoles(principal, ["SUPER_ADMIN"]);
@@ -82,7 +82,7 @@ export async function GET() {
   }
 }
 
-export async function POST(request: Request) {
+async function createPlatformResource(request: Request) {
   try {
     const principal = await requirePrincipal();
     requireRoles(principal, ["SUPER_ADMIN"]);
@@ -189,7 +189,7 @@ const patchSchema = z.discriminatedUnion("target", [
   }).refine((value) => value.status || value.role),
 ]);
 
-export async function PATCH(request: Request) {
+async function updatePlatform(request: Request) {
   try {
     const principal = await requirePrincipal();
     requireRoles(principal, ["SUPER_ADMIN"]);
@@ -250,3 +250,7 @@ export async function PATCH(request: Request) {
     return handleApiError(error);
   }
 }
+
+export const GET = withDatabaseRoute(getPlatform);
+export const POST = withDatabaseRoute(createPlatformResource);
+export const PATCH = withDatabaseRoute(updatePlatform);

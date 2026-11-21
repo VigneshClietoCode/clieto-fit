@@ -74,6 +74,8 @@ The API also has a Cloudflare build configuration. Set its project root director
 
 Every mutating route validates its input, checks the configured web origin for cookie-authenticated requests, and uses the authenticated principal's role and gym rather than trusting client-supplied ownership. Logo uploads accept PNG/JPEG/WebP content up to 2 MB, derive the extension from file bytes, and are served through an authenticated, tenant-checked endpoint. Configure persistent `LOGO_STORAGE_DIR` storage for deployed API instances.
 
+For Cloudflare requests, every database-backed API route uses a request-scoped Prisma client and closes it before returning. Do not move the Worker database client to a module-level singleton; the web app remains database-free and communicates with the API over HTTP.
+
 ## Supabase PostgreSQL
 
 Prisma connects to Supabase PostgreSQL using `SUPABASE_URL` from the root `.env`. Run `npm run db:deploy` to create the tables in a new, empty Supabase database, then run `npm run db:seed` to create the Super Admin. Configure `API_INTERNAL_URL` on the web app at build time, and configure `SESSION_SECRET` and `SUPABASE_URL` on the API. For custom web and API subdomains on the same domain, set `SESSION_COOKIE_DOMAIN` to their shared parent domain. Changing the provider does not transfer data from an existing SQLite database; move any data you need with a deliberate export/import and reconciliation plan. Keep Supabase credentials on the server and use a least-privilege database role.

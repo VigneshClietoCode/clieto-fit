@@ -8,7 +8,7 @@ import {
   requireRoles,
 } from "@/lib/api";
 import { logoDirectory } from "@/lib/branding-storage";
-import { db } from "@/lib/db";
+import { db, withDatabaseRoute } from "@/lib/db";
 import { NextResponse } from "next/server";
 
 const MAX_LOGO_BYTES = 2 * 1024 * 1024;
@@ -85,7 +85,7 @@ async function readLogoForm(request: Request): Promise<FormData> {
   }
 }
 
-export async function PUT(request: Request) {
+async function uploadBranding(request: Request) {
   try {
     const principal = await requirePrincipal();
     requireRoles(principal, ["ADMIN"]);
@@ -139,7 +139,7 @@ export async function PUT(request: Request) {
   }
 }
 
-export async function DELETE(request: Request) {
+async function removeBranding(request: Request) {
   try {
     const principal = await requirePrincipal();
     requireRoles(principal, ["ADMIN"]);
@@ -163,3 +163,6 @@ export async function DELETE(request: Request) {
     return handleApiError(error);
   }
 }
+
+export const PUT = withDatabaseRoute(uploadBranding);
+export const DELETE = withDatabaseRoute(removeBranding);
