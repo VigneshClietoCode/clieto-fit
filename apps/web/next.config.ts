@@ -20,9 +20,10 @@ const contentSecurityPolicy = [
   "form-action 'self'",
   "frame-ancestors 'none'",
   "object-src 'none'",
-  `img-src 'self' ${apiOrigin} data: blob:`,
-  "style-src 'self' 'unsafe-inline'",
-  `script-src 'self' 'unsafe-inline'${isDevelopment ? " 'unsafe-eval'" : ""}`,
+  `img-src 'self' ${apiOrigin} https://lh3.googleusercontent.com data: blob:`,
+  "style-src 'self' 'unsafe-inline' https://accounts.google.com",
+  "style-src-elem 'self' 'unsafe-inline' https://static.cloudflareinsights.com https://accounts.google.com",
+  `script-src 'self' 'unsafe-inline'${isDevelopment ? " 'unsafe-eval'" : ""} https://accounts.google.com`,
   "script-src-elem 'self' 'unsafe-inline' https://static.cloudflareinsights.com https://accounts.google.com",
   `connect-src 'self' ${apiOrigin} https://accounts.google.com${isDevelopment ? " ws://localhost:3000 ws://127.0.0.1:3000" : ""}`,
   "frame-src https://accounts.google.com",
@@ -48,6 +49,15 @@ const nextConfig: NextConfig = {
           { key: "X-Frame-Options", value: "DENY" },
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
           { key: "Content-Security-Policy", value: contentSecurityPolicy },
+        ],
+      },
+      {
+        // Google Sign-In popup communicates back via window.postMessage.
+        // COOP same-origin (Next.js default) severs that link; allow-popups restores it
+        // only for pages that open the Google auth popup.
+        source: "/login",
+        headers: [
+          { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
         ],
       },
     ];

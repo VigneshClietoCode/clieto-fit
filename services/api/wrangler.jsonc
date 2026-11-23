@@ -26,5 +26,8 @@
   ],
   "observability": {
     "enabled": true
-  }
+  },
+  "vars": {
+    "GOOGLE_CLIENT_ID": "279662052023-57qrf1fsi0i8nu3q89lt20hpvqoet9hc.apps.googleusercontent.com"
+  },
 }
