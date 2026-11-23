@@ -51,11 +51,16 @@ async function getGooglePublicKeys(): Promise<GoogleCertsResponse["keys"]> {
   return data.keys;
 }
 
-function base64urlToUint8Array(base64url: string): Uint8Array {
+function base64urlToUint8Array(base64url: string): Uint8Array<ArrayBuffer> {
   const base64 = base64url.replace(/-/g, "+").replace(/_/g, "/");
   const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), "=");
   const binary = atob(padded);
-  return Uint8Array.from(binary, (c) => c.charCodeAt(0));
+  const buffer = new ArrayBuffer(binary.length);
+  const view = new Uint8Array(buffer);
+  for (let i = 0; i < binary.length; i++) {
+    view[i] = binary.charCodeAt(i);
+  }
+  return view;
 }
 
 async function verifyGoogleIdToken(
@@ -116,8 +121,8 @@ async function verifyGoogleIdToken(
   const valid = await crypto.subtle.verify(
     "RSASSA-PKCS1-v1_5",
     cryptoKey,
-    signature,
-    signedData,
+    signature.buffer,
+    signedData.buffer,
   );
 
   if (!valid) throw new ApiError("Google token signature is invalid.", 401);
