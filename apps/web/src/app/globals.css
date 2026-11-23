@@ -94,6 +94,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .nav-icon { width: 17px; display: inline-grid; place-items: center; color: #8b9b8e; font-size: 16px; }
 .nav-item-active .nav-icon { color: #347653; }
 .nav-indicator { width: 6px; height: 6px; margin-left: auto; border-radius: 50%; background: #d79a5e; }
+.nav-notification-count { min-width: 20px; height: 20px; display: inline-grid; place-items: center; padding: 0 5px; margin-left: auto; color: #fff; background: #c65e4d; border-radius: 999px; font-size: 10px; font-weight: 700; line-height: 1; }
 .sidebar-bottom { margin-top: 20px; }
 .sidebar-tip { padding: 15px 13px 12px; margin: 0 0 13px; background: #f7f8f4; border: 1px solid #f0f1eb; border-radius: 9px; }
 .tip-icon { width: 25px; height: 25px; display: grid; place-items: center; margin-bottom: 11px; color: #6f9c74; background: #e8f0e5; border-radius: 7px; }

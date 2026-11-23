@@ -46,7 +46,9 @@ The separate Android and iOS Expo / React Native project is in [`apps/mobile`](.
 
 All data-bearing APIs enforce role, gym, and (for members) record ownership on the server. Login checks the selected portal against the stored role. Sessions use random opaque tokens stored as HMAC digests; web sessions use HTTP-only cookies and mobile sessions use bearer tokens. Cookie-authenticated mutations check the configured web origin. Passwords are bcrypt-hashed. Admin and Super Admin account creation requires a 12-character minimum password; the Super Admin bootstrap values are supplied only through environment variables.
 
-Support tickets receive a reference number and are assigned to an active Super Admin. Requesters choose from Account & access, Billing & payments, Attendance, Training & diet, Equipment & facilities, App/technical, and Other categories; an optional subcategory; and Low/Medium/High priority. They can describe the issue and follow its public updates. Super Admins can reprioritize tickets, move them through New, In Progress, On Hold, Resolved, and Closed, and record resolution notes. Only the requester and Super Admins can view a ticket and its conversation.
+Gym and member accounts can save an optional contact number when created, and members can manage it in their profile. A saved number is automatically attached to support tickets; if it is missing, the ticket form requires a number and saves it to the account.
+
+Support tickets receive a reference number and are assigned to an active Super Admin. Requesters choose from Account & access, Billing & payments, Attendance, Training & diet, Equipment & facilities, App/technical, and Other categories; an optional subcategory; and Low/Medium/High priority. The ticket uses the contact number saved on the account; if none is saved, the requester must provide one when submitting, and it is saved to their account for future tickets. The number is included on the ticket for Super Admin follow-up. Requesters can describe the issue and follow its public updates. Super Admins can reprioritize tickets, move them through New, In Progress, On Hold, Resolved, and Closed, and record resolution notes. Ticket menu badges show the number of tickets updated since that user last opened the menu, and clear when the user opens it. Only the requester and Super Admins can view a ticket and its conversation.
 
 ## Explicit initial policies
 
@@ -71,7 +73,7 @@ The API also has a Cloudflare build configuration. Set its project root director
 - `GET /api/records/{members|training|diets|attendance|fees|payments|offers|equipment}`
 - `POST /api/records/{resource}`, `PATCH|DELETE /api/records/{resource}/{id}`
 - `GET|POST|PATCH /api/platform` (Super Admin only)
-- `GET|POST /api/tickets`, `PATCH /api/tickets/{id}` (Gym Admins and members can create and comment on their own tickets; Super Admins can manage all tickets)
+- `GET|POST /api/tickets`, `GET /api/tickets/notifications`, `PATCH /api/tickets/{id}` (Gym Admins and members can create and comment on their own tickets; Super Admins can manage all tickets)
 - `GET|PATCH /api/gym` (Admin only)
 - `PUT|DELETE /api/branding`, `GET /api/branding/{gymId}`
 - `PATCH /api/account` (the signed-in account only)

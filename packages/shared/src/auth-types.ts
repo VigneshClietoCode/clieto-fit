@@ -4,6 +4,7 @@ export type Principal = {
   id: string;
   email: string;
   name: string;
+  phone?: string | null;
   role: Role;
   gymId: string | null;
   gymName: string | null;
