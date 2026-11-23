@@ -93,6 +93,7 @@ export async function getPrincipal(): Promise<Principal | null> {
     id: user.id,
     email: user.email,
     name: user.name,
+    phone: user.phone,
     role: user.role as Role,
     gymId: user.gymId,
     gymName: user.gym?.name ?? null,

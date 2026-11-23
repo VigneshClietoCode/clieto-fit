@@ -317,6 +317,28 @@ export const openApiDocument = {
         },
       },
     },
+    "/api/tickets/notifications": {
+      get: {
+        tags: ["Tickets"],
+        summary: "Count unread ticket updates",
+        description:
+          "Counts tickets updated since the supplied cursor. Super Admins see the platform queue; Gym Admins and members see only tickets they reported.",
+        security: sessionSecurity,
+        parameters: [{
+          name: "since",
+          in: "query",
+          required: true,
+          schema: { type: "string", format: "date-time" },
+        }],
+        responses: {
+          "200": jsonResponse("Unread ticket count.", schemaRef("TicketNotificationCountResponse")),
+          "400": responseRef,
+          "401": responseRef,
+          "403": responseRef,
+          "500": responseRef,
+        },
+      },
+    },
     "/api/tickets/{id}": {
       patch: {
         tags: ["Tickets"],
@@ -550,6 +572,7 @@ export const openApiDocument = {
           id: { type: "string" },
           email: { type: "string", format: "email" },
           name: { type: "string" },
+          phone: { type: "string", nullable: true },
           role: { type: "string", enum: ["SUPER_ADMIN", "ADMIN", "USER"] },
           gymId: { type: "string", nullable: true },
           gymName: { type: "string", nullable: true },
@@ -561,10 +584,15 @@ export const openApiDocument = {
         type: "object",
         properties: {
           name: { type: "string", minLength: 2, maxLength: 100 },
+          phone: { type: "string", nullable: true, description: "Optional contact number, used for support tickets." },
           currentPassword: { type: "string", minLength: 1, maxLength: 128 },
           newPassword: { type: "string", minLength: 12, maxLength: 128 },
         },
-        anyOf: [{ required: ["name"] }, { required: ["newPassword", "currentPassword"] }],
+        anyOf: [
+          { required: ["name"] },
+          { required: ["phone"] },
+          { required: ["newPassword", "currentPassword"] },
+        ],
       },
       Gym: {
         type: "object",
@@ -632,6 +660,7 @@ export const openApiDocument = {
               name: { type: "string", minLength: 2, maxLength: 100 },
               email: { type: "string", format: "email", maxLength: 254 },
               password: { type: "string", minLength: 12, maxLength: 128 },
+              phone: { type: "string", nullable: true, description: "Optional contact number." },
               role: { type: "string", enum: ["ADMIN", "USER"] },
               gymId: { type: "string", description: "Gym CUID." },
             },
@@ -725,6 +754,7 @@ export const openApiDocument = {
           },
           subcategory: { type: "string", nullable: true },
           priority: { type: "string", enum: ["LOW", "MEDIUM", "HIGH"] },
+          contactPhone: { type: "string", nullable: true },
           status: { type: "string", enum: ["NEW", "IN_PROGRESS", "ON_HOLD", "RESOLVED", "CLOSED"] },
           resolutionNotes: { type: "string", nullable: true },
           resolvedAt: { type: "string", format: "date-time", nullable: true },
@@ -740,6 +770,11 @@ export const openApiDocument = {
         type: "object",
         required: ["tickets"],
         properties: { tickets: { type: "array", items: schemaRef("Ticket") } },
+      },
+      TicketNotificationCountResponse: {
+        type: "object",
+        required: ["count"],
+        properties: { count: { type: "integer", minimum: 0 } },
       },
       TicketResponse: {
         type: "object",
@@ -758,6 +793,12 @@ export const openApiDocument = {
           },
           subcategory: { type: "string", maxLength: 80 },
           priority: { type: "string", enum: ["LOW", "MEDIUM", "HIGH"], default: "MEDIUM" },
+          contactPhone: {
+            type: "string",
+            minLength: 7,
+            maxLength: 25,
+            description: "Used when the reporter has no saved account phone number.",
+          },
         },
       },
       TicketUpdateRequest: {
@@ -784,6 +825,7 @@ export const openApiDocument = {
               name: { type: "string", minLength: 2, maxLength: 100 },
               email: { type: "string", format: "email", maxLength: 254 },
               password: { type: "string", minLength: 12, maxLength: 128 },
+              phone: { type: "string", nullable: true, description: "Optional contact number." },
               feeId: { type: "string", nullable: true, description: "Fee structure CUID." },
             },
           },

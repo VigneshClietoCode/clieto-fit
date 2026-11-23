@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type { Principal, Role } from "@clieto-fit/shared/auth-types";
@@ -290,6 +290,16 @@ function DashboardWorkspace({
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(principal.role === "SUPER_ADMIN");
   const [ticketRefreshKey, setTicketRefreshKey] = useState(0);
+  const [ticketNotificationCount, setTicketNotificationCount] = useState(0);
+  const ticketNotificationCursor = useRef<string | null>(null);
+  const ticketNotificationStorageKey = `clieto-fit:ticket-notifications:${principal.id}`;
+
+  const markTicketNotificationsSeen = useCallback(() => {
+    const cursor = new Date().toISOString();
+    ticketNotificationCursor.current = cursor;
+    window.localStorage.setItem(ticketNotificationStorageKey, cursor);
+    setTicketNotificationCount(0);
+  }, [ticketNotificationStorageKey]);
 
   const loadPortal = useCallback(async () => {
     const data = await apiRequest<PortalData>("/api/portal");
@@ -348,10 +358,62 @@ function DashboardWorkspace({
     return () => { activeEffect = false; };
   }, [loadPlatform, principal.role]);
 
+  useEffect(() => {
+    const storedCursor = window.localStorage.getItem(ticketNotificationStorageKey);
+    const parsedCursor = storedCursor ? new Date(storedCursor) : null;
+    const cursor =
+      parsedCursor && !Number.isNaN(parsedCursor.getTime())
+        ? parsedCursor.toISOString()
+        : new Date().toISOString();
+    ticketNotificationCursor.current = cursor;
+    if (cursor !== storedCursor) {
+      window.localStorage.setItem(ticketNotificationStorageKey, cursor);
+    }
+
+    let activeEffect = true;
+    let requestPending = false;
+    const refreshNotificationCount = async () => {
+      if (requestPending || document.visibilityState === "hidden") return;
+      requestPending = true;
+      try {
+        const since = ticketNotificationCursor.current ?? cursor;
+        const result = await apiRequest<{ count: number }>(
+          `/api/tickets/notifications?since=${encodeURIComponent(since)}`,
+        );
+        if (activeEffect && since === ticketNotificationCursor.current) {
+          setTicketNotificationCount(result.count);
+        }
+      } catch (requestError) {
+        if (activeEffect) {
+          setError(
+            requestError instanceof Error
+              ? requestError.message
+              : "Unable to load ticket notifications.",
+          );
+        }
+      } finally {
+        requestPending = false;
+      }
+    };
+
+    void refreshNotificationCount();
+    const interval = window.setInterval(() => void refreshNotificationCount(), 30_000);
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") void refreshNotificationCount();
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      activeEffect = false;
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [ticketNotificationStorageKey]);
+
   const activeFees = useMemo(() => feeOptions.filter((fee) => fee.active), [feeOptions]);
   const nav = navigation[principal.role];
 
   function navigate(module: Module) {
+    if (module === "tickets") markTicketNotificationsSeen();
     setActive(module);
     setNotice("");
     setError("");
@@ -486,6 +548,16 @@ function DashboardWorkspace({
             >
               <span className="nav-icon" aria-hidden="true">{item.icon}</span>
               <span>{item.label}</span>
+              {item.id === "tickets" && ticketNotificationCount > 0 && (
+                <span
+                  className="nav-notification-count"
+                  aria-label={`${ticketNotificationCount} unread ticket ${ticketNotificationCount === 1 ? "update" : "updates"}`}
+                  aria-live="polite"
+                  aria-atomic="true"
+                >
+                  {ticketNotificationCount > 99 ? "99+" : ticketNotificationCount}
+                </span>
+              )}
               {item.id === "payments" && principal.role === "USER" && portal?.metrics.paymentStatus !== "PAID" && (
                 <span className="nav-indicator" aria-label="Payment reminder" />
               )}
@@ -525,6 +597,16 @@ function DashboardWorkspace({
                 onClick={() => navigate(item.id)}
               >
                 <span aria-hidden="true">{item.icon}</span>{item.label}
+                {item.id === "tickets" && ticketNotificationCount > 0 && (
+                  <span
+                    className="nav-notification-count"
+                    aria-label={`${ticketNotificationCount} unread ticket ${ticketNotificationCount === 1 ? "update" : "updates"}`}
+                    aria-live="polite"
+                    aria-atomic="true"
+                  >
+                    {ticketNotificationCount > 99 ? "99+" : ticketNotificationCount}
+                  </span>
+                )}
               </button>
             ))}
           </nav>
@@ -618,13 +700,19 @@ function DashboardWorkspace({
             <ActivityPanel audits={platform.audits} />
           )}
           {active === "tickets" && (
-            <TicketPanel role={principal.role} refreshKey={ticketRefreshKey} />
+            <TicketPanel
+              role={principal.role}
+              phone={portal?.user.phone ?? principal.phone ?? null}
+              refreshKey={ticketRefreshKey}
+              onActivity={markTicketNotificationsSeen}
+            />
           )}
           {principal.role === "USER" && active === "profile" && (
             <ProfilePanel
-              principal={principal}
+              principal={portal?.user ?? principal}
               onNotice={setNotice}
               onError={setError}
+              onUpdated={loadPortal}
             />
           )}
         </section>
@@ -876,6 +964,7 @@ function editorFields(
     if (!editing) {
       fields.push(input("name", "Full name", { placeholder: "e.g. Maya Chen" }));
       fields.push(input("email", "Email address", { type: "email", placeholder: "maya@example.com" }));
+      fields.push(input("phone", "Contact number (optional)", { type: "tel", placeholder: "+1 555 123 4567", required: false, autoComplete: "tel" }));
       fields.push(input("password", "Temporary password", { type: "password", minLength: 12, placeholder: "At least 12 characters", autoComplete: "new-password" }));
     }
     fields.push(
@@ -917,7 +1006,12 @@ function editorFields(
 function buildRecordPayload(module: Module, draft: Record<string, string>, role: Role, editing: Row | null) {
   if (module === "members") {
     const payload: Record<string, unknown> = { feeId: draft.feeId || null };
-    if (!editing) Object.assign(payload, { name: draft.name, email: draft.email, password: draft.password });
+    if (!editing) Object.assign(payload, {
+      name: draft.name,
+      email: draft.email,
+      password: draft.password,
+      phone: draft.phone?.trim() || null,
+    });
     return payload;
   }
   if (module === "training" || module === "diets") {
@@ -1074,17 +1168,23 @@ function PlatformPanel({
   onError: (message: string) => void;
 }) {
   const [gymDraft, setGymDraft] = useState({ name: "", slug: "", timezone: "UTC" });
-  const [accountDraft, setAccountDraft] = useState({ name: "", email: "", password: "", role: "ADMIN", gymId: "" });
+  const [accountDraft, setAccountDraft] = useState({ name: "", email: "", password: "", phone: "", role: "ADMIN", gymId: "" });
   const [busy, setBusy] = useState(false);
   async function submit(event: FormEvent<HTMLFormElement>, action: "create-gym" | "create-account") {
     event.preventDefault();
     setBusy(true);
     onError("");
     try {
-      await apiRequest("/api/platform", "POST", action === "create-gym" ? { action, ...gymDraft } : { action, ...accountDraft });
+      await apiRequest(
+        "/api/platform",
+        "POST",
+        action === "create-gym"
+          ? { action, ...gymDraft }
+          : { action, ...accountDraft, phone: accountDraft.phone.trim() || null },
+      );
       onNotice(action === "create-gym" ? "Workspace created." : "Account created.");
       if (action === "create-gym") setGymDraft({ name: "", slug: "", timezone: "UTC" });
-      else setAccountDraft({ name: "", email: "", password: "", role: "ADMIN", gymId: "" });
+      else setAccountDraft({ name: "", email: "", password: "", phone: "", role: "ADMIN", gymId: "" });
       await onReload();
     } catch (error) {
       onError(error instanceof Error ? error.message : "Could not create this record.");
@@ -1107,6 +1207,7 @@ function PlatformPanel({
           <form className="form-stack" onSubmit={(event) => void submit(event, "create-account")}>
             <label className="field"><span>Full name</span><input required minLength={2} maxLength={100} value={accountDraft.name} onChange={(event) => setAccountDraft({ ...accountDraft, name: event.target.value })} /></label>
             <label className="field"><span>Email</span><input required type="email" value={accountDraft.email} onChange={(event) => setAccountDraft({ ...accountDraft, email: event.target.value })} /></label>
+            <label className="field"><span>Contact number (optional)</span><input type="tel" autoComplete="tel" inputMode="tel" maxLength={25} value={accountDraft.phone} onChange={(event) => setAccountDraft({ ...accountDraft, phone: event.target.value })} placeholder="+1 555 123 4567" /></label>
             <label className="field"><span>Temporary password</span><input required type="password" minLength={12} autoComplete="new-password" value={accountDraft.password} onChange={(event) => setAccountDraft({ ...accountDraft, password: event.target.value })} /></label>
             <label className="field"><span>Role</span><select value={accountDraft.role} onChange={(event) => setAccountDraft({ ...accountDraft, role: event.target.value })}><option value="ADMIN">Gym administrator</option><option value="USER">Member</option></select></label>
             <label className="field"><span>Workspace</span><select required value={accountDraft.gymId} onChange={(event) => setAccountDraft({ ...accountDraft, gymId: event.target.value })}><option value="">Choose a gym</option>{data.gyms.filter((gym) => gym.status === "ACTIVE").map((gym) => <option key={gym.id} value={gym.id}>{gym.name}</option>)}</select></label>
@@ -1180,8 +1281,9 @@ function ActivityPanel({ audits }: { audits: PlatformData["audits"] }) {
   return <section className="section-card records-card"><div className="panel-title-row"><div><span className="card-kicker">SUPER ADMIN ACTIONS</span><h2>Recent platform activity</h2></div><span className="record-count">Latest {audits.length}</span></div>{audits.length === 0 ? <div className="empty-state"><strong>No activity recorded</strong><p>Platform changes will be listed here.</p></div> : <div className="activity-list">{audits.map((audit) => <article className="activity-item" key={audit.id}><span className="activity-icon">◷</span><div><strong>{humanize(audit.action)}</strong><p>{audit.actor?.name ?? "A platform administrator"} · {audit.entityType} · {audit.entityId.slice(0, 10)}</p></div><time>{formatDate(audit.createdAt)}</time></article>)}</div>}<p className="field-hint activity-note">Audit entries record action type and record ID only, not member health or payment details.</p></section>;
 }
 
-function ProfilePanel({ principal, onNotice, onError }: { principal: Principal; onNotice: (message: string) => void; onError: (message: string) => void }) {
+function ProfilePanel({ principal, onNotice, onError, onUpdated }: { principal: Principal; onNotice: (message: string) => void; onError: (message: string) => void; onUpdated: () => Promise<void> }) {
   const [name, setName] = useState(principal.name);
+  const [phone, setPhone] = useState(principal.phone ?? "");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -1192,8 +1294,10 @@ function ProfilePanel({ principal, onNotice, onError }: { principal: Principal; 
     try {
       await apiRequest("/api/account", "PATCH", {
         name,
+        phone: phone.trim() || null,
         ...(newPassword ? { currentPassword, newPassword } : {}),
       });
+      await onUpdated();
       setCurrentPassword("");
       setNewPassword("");
       onNotice("Your account is updated.");
@@ -1201,7 +1305,7 @@ function ProfilePanel({ principal, onNotice, onError }: { principal: Principal; 
       onError(error instanceof Error ? error.message : "Unable to update your account.");
     } finally { setBusy(false); }
   }
-  return <section className="section-card settings-card narrow-settings"><span className="card-kicker">YOUR PROFILE</span><h2>Keep your account current</h2><p className="muted">{principal.email} · {principal.gymName ?? "Clieto Fit"}</p><form className="form-stack settings-form" onSubmit={(event) => void save(event)}><label className="field"><span>Your name</span><input required minLength={2} maxLength={100} value={name} onChange={(event) => setName(event.target.value)} /></label><div className="form-divider" /><span className="card-kicker">CHANGE PASSWORD</span><label className="field"><span>Current password</span><input type="password" autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} required={Boolean(newPassword)} /></label><label className="field"><span>New password</span><input type="password" autoComplete="new-password" minLength={12} maxLength={128} value={newPassword} onChange={(event) => setNewPassword(event.target.value)} placeholder="At least 12 characters" /></label><button className="button button-primary" disabled={busy}>{busy ? "Saving..." : "Save account"}</button></form></section>;
+  return <section className="section-card settings-card narrow-settings"><span className="card-kicker">YOUR PROFILE</span><h2>Keep your account current</h2><p className="muted">{principal.email} · {principal.gymName ?? "Clieto Fit"}</p><form className="form-stack settings-form" onSubmit={(event) => void save(event)}><label className="field"><span>Your name</span><input required minLength={2} maxLength={100} value={name} onChange={(event) => setName(event.target.value)} /></label><label className="field"><span>Contact number</span><input type="tel" autoComplete="tel" inputMode="tel" maxLength={25} value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="+1 555 123 4567" /><small className="field-hint">Used by the Super Admin team if you submit a support ticket.</small></label><div className="form-divider" /><span className="card-kicker">CHANGE PASSWORD</span><label className="field"><span>Current password</span><input type="password" autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} required={Boolean(newPassword)} /></label><label className="field"><span>New password</span><input type="password" autoComplete="new-password" minLength={12} maxLength={128} value={newPassword} onChange={(event) => setNewPassword(event.target.value)} placeholder="At least 12 characters" /></label><button className="button button-primary" disabled={busy}>{busy ? "Saving..." : "Save account"}</button></form></section>;
 }
 
 function pageDescription(module: Module, role: Role, gymName?: string): string {

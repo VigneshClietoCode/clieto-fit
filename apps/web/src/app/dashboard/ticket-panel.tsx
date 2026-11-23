@@ -31,6 +31,7 @@ type Ticket = {
   status: TicketStatus;
   resolutionNotes: string | null;
   resolvedAt: string | null;
+  contactPhone: string | null;
   createdAt: string;
   updatedAt: string;
   reporter: { id: string; name: string; email: string; role: string };
@@ -45,6 +46,7 @@ type TicketDraft = {
   category: TicketCategory | "";
   subcategory: string;
   priority: string;
+  contactPhone: string;
 };
 
 const initialDraft: TicketDraft = {
@@ -53,6 +55,7 @@ const initialDraft: TicketDraft = {
   category: "",
   subcategory: "",
   priority: "MEDIUM",
+  contactPhone: "",
 };
 
 async function request<T>(url: string, method = "GET", body?: unknown): Promise<T> {
@@ -83,6 +86,10 @@ function label(value: string): string {
   return value.toLowerCase().replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
+function requesterRole(role: string): string {
+  return role === "ADMIN" ? "Gym Admin" : "Gym Member";
+}
+
 function nextStatuses(status: TicketStatus): TicketStatus[] {
   const transitions: Record<TicketStatus, TicketStatus[]> = {
     NEW: ["NEW", "IN_PROGRESS", "ON_HOLD", "RESOLVED"],
@@ -96,16 +103,24 @@ function nextStatuses(status: TicketStatus): TicketStatus[] {
 
 export default function TicketPanel({
   role,
+  phone,
   refreshKey,
+  onActivity,
 }: {
   role: Role;
+  phone: string | null;
   refreshKey: number;
+  onActivity: () => void;
 }) {
   const isSuperAdmin = role === "SUPER_ADMIN";
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [selectedId, setSelectedId] = useState("");
   const selectedIdRef = useRef("");
-  const [draft, setDraft] = useState<TicketDraft>(initialDraft);
+  const [accountPhone, setAccountPhone] = useState(phone ?? "");
+  const [draft, setDraft] = useState<TicketDraft>({
+    ...initialDraft,
+    contactPhone: phone ?? "",
+  });
   const [comment, setComment] = useState("");
   const [status, setStatus] = useState<TicketStatus>("NEW");
   const [priority, setPriority] = useState("MEDIUM");
@@ -164,13 +179,19 @@ export default function TicketPanel({
     setNotice("");
     try {
       const { ticket } = await request<{ ticket: Ticket }>("/api/tickets", "POST", draft);
-      setDraft(initialDraft);
-      await loadTickets();
+      const savedPhone = ticket.contactPhone ?? draft.contactPhone;
+      setAccountPhone(savedPhone);
+      setDraft({ ...initialDraft, contactPhone: savedPhone });
+      setTickets((current) => [
+        ticket,
+        ...current.filter((existing) => existing.id !== ticket.id),
+      ]);
       selectedIdRef.current = ticket.id;
       setSelectedId(ticket.id);
       setStatus(ticket.status);
       setPriority(ticket.priority);
       setResolutionNotes(ticket.resolutionNotes ?? "");
+      onActivity();
       setNotice(`${ticketNumber(ticket)} was submitted to the Super Admin team.`);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Unable to submit this ticket.");
@@ -189,6 +210,7 @@ export default function TicketPanel({
       await request(`/api/tickets/${selected.id}`, "PATCH", { comment });
       setComment("");
       await loadTickets();
+      onActivity();
       setNotice("Your update was added to the ticket.");
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Unable to add this update.");
@@ -210,6 +232,7 @@ export default function TicketPanel({
         ...(resolutionNotes.trim() ? { resolutionNotes } : {}),
       });
       await loadTickets();
+      onActivity();
       setNotice(`${ticketNumber(selected)} was updated.`);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Unable to update this ticket.");
@@ -235,6 +258,7 @@ export default function TicketPanel({
             <label className="field"><span>Category</span><select required value={draft.category} onChange={(event) => setDraft({ ...draft, category: event.target.value as TicketCategory })}><option value="">Choose a category</option>{TICKET_CATEGORIES.map((category) => <option key={category} value={category}>{TICKET_CATEGORY_LABELS[category]}</option>)}</select></label>
             <label className="field"><span>Subcategory (optional)</span><input maxLength={80} value={draft.subcategory} onChange={(event) => setDraft({ ...draft, subcategory: event.target.value })} placeholder="e.g. Login, treadmill, class booking" /></label>
             <label className="field"><span>Priority</span><select value={draft.priority} onChange={(event) => setDraft({ ...draft, priority: event.target.value })}><option value="LOW">Low</option><option value="MEDIUM">Medium</option><option value="HIGH">High</option></select></label>
+            <label className="field"><span>Contact number {accountPhone ? "(from your account)" : "(required)"}</span><input type="tel" autoComplete="tel" inputMode="tel" required={!accountPhone} maxLength={25} readOnly={Boolean(accountPhone)} value={accountPhone || draft.contactPhone} onChange={(event) => setDraft({ ...draft, contactPhone: event.target.value })} placeholder="+1 555 123 4567" /></label>
             <label className="field ticket-description-field"><span>What happened?</span><textarea required minLength={10} maxLength={5000} rows={4} value={draft.description} onChange={(event) => setDraft({ ...draft, description: event.target.value })} placeholder="Include what you were trying to do and any steps to reproduce the issue." /></label>
             <button className="button button-primary" disabled={busy}>{busy ? "Submitting..." : "Submit ticket"}</button>
           </form>
@@ -267,7 +291,7 @@ export default function TicketPanel({
                 <span className="ticket-list-top"><strong>{ticketNumber(ticket)}</strong><span className={`ticket-status status-${ticket.status.toLowerCase()}`}>{TICKET_STATUS_LABELS[ticket.status]}</span></span>
                 <strong className="ticket-subject">{ticket.subject}</strong>
                 <span className="ticket-list-meta">{TICKET_CATEGORY_LABELS[ticket.category] ?? label(ticket.category)} · <span className={`ticket-priority priority-${ticket.priority.toLowerCase()}`}>{label(ticket.priority)}</span></span>
-                <small>{isSuperAdmin ? `${ticket.reporter.name} · ${ticket.gym.name}` : `Updated ${formatDateTime(ticket.updatedAt)}`}</small>
+                <small>{isSuperAdmin ? `${ticket.reporter.name} · ${requesterRole(ticket.reporter.role)} · ${ticket.gym.name}` : `Updated ${formatDateTime(ticket.updatedAt)}`}</small>
               </button>
             ))}
           </div>
@@ -287,8 +311,9 @@ export default function TicketPanel({
               <div><small>Priority</small><strong className={`ticket-priority priority-${selected.priority.toLowerCase()}`}>{label(selected.priority)}</strong></div>
               <div><small>Submitted</small><strong>{formatDateTime(selected.createdAt)}</strong></div>
               <div><small>Assigned to</small><strong>{selected.assignedTo.name}</strong></div>
-              {isSuperAdmin && <div><small>Requested by</small><strong>{selected.reporter.name} · {selected.reporter.role === "ADMIN" ? "Gym Admin" : "Member"}</strong></div>}
+              {isSuperAdmin && <div><small>Created by</small><strong>{selected.reporter.name} · {requesterRole(selected.reporter.role)}</strong></div>}
               {isSuperAdmin && <div><small>Gym</small><strong>{selected.gym.name}</strong></div>}
+              {isSuperAdmin && selected.contactPhone && <div><small>Contact number</small><strong><a href={`tel:${selected.contactPhone}`}>{selected.contactPhone}</a></strong></div>}
               {selected.subcategory && <div><small>Subcategory</small><strong>{selected.subcategory}</strong></div>}
             </div>
             <div className="ticket-description"><span className="card-kicker">DESCRIPTION</span><p>{selected.description}</p></div>

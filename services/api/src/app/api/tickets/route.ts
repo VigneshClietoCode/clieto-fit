@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { ZodError, z } from "zod";
 import {
   TICKET_CATEGORIES,
   TICKET_PRIORITIES,
@@ -11,6 +11,7 @@ import {
   requireRoles,
 } from "@/lib/api";
 import { db, withDatabaseRoute } from "@/lib/db";
+import { contactPhoneSchema } from "@/lib/validation";
 import { NextResponse } from "next/server";
 
 const ticketInclude = {
@@ -30,6 +31,7 @@ const createTicketSchema = z.object({
   category: z.enum(TICKET_CATEGORIES),
   subcategory: z.string().trim().max(80).optional(),
   priority: z.enum(TICKET_PRIORITIES).default("MEDIUM"),
+  contactPhone: contactPhoneSchema.optional(),
 });
 
 async function getTickets() {
@@ -49,8 +51,10 @@ async function getTickets() {
 }
 
 async function createTicket(request: Request) {
+  let actorRole = "UNKNOWN";
   try {
     const principal = await requirePrincipal();
+    actorRole = principal.role;
     requireRoles(principal, ["ADMIN", "USER"]);
     const gymId = principal.gymId;
     if (!gymId) throw new ApiError("Gym access is required.", 403);
@@ -65,6 +69,21 @@ async function createTicket(request: Request) {
     }
 
     const ticket = await db.$transaction(async (transaction) => {
+      const reporter = await transaction.user.findUnique({
+        where: { id: principal.id },
+        select: { phone: true },
+      });
+      if (!reporter) throw new ApiError("Your account could not be found.", 404);
+      const contactPhone = reporter.phone ?? input.contactPhone;
+      if (!contactPhone) {
+        throw new ApiError("Enter a contact number so the Super Admin team can follow up.", 400);
+      }
+      if (!reporter.phone) {
+        await transaction.user.update({
+          where: { id: principal.id },
+          data: { phone: contactPhone },
+        });
+      }
       const created = await transaction.ticket.create({
         data: {
           gymId,
@@ -75,6 +94,7 @@ async function createTicket(request: Request) {
           category: input.category,
           subcategory: input.subcategory || null,
           priority: input.priority,
+          contactPhone,
         },
         include: ticketInclude,
       });
@@ -91,6 +111,21 @@ async function createTicket(request: Request) {
 
     return NextResponse.json({ ticket }, { status: 201 });
   } catch (error) {
+    if (!(error instanceof ApiError) && !(error instanceof ZodError)) {
+      const code =
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        typeof error.code === "string"
+          ? error.code
+          : undefined;
+      console.error(JSON.stringify({
+        event: "ticket_create_failed",
+        role: actorRole,
+        errorName: error instanceof Error ? error.name : "UnknownError",
+        ...(code ? { code } : {}),
+      }));
+    }
     return handleApiError(error);
   }
 }

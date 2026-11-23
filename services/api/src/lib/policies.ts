@@ -41,3 +41,13 @@ export function canTransitionTicketStatus(
   };
   return allowed[current].includes(next);
 }
+
+export function ticketNotificationWhere(
+  principal: { id: string; role: string },
+  since: Date,
+) {
+  return {
+    updatedAt: { gt: since },
+    ...(principal.role === "SUPER_ADMIN" ? {} : { reporterId: principal.id }),
+  };
+}

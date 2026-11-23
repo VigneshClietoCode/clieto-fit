@@ -9,6 +9,7 @@ import {
 } from "@/lib/api";
 import { db, withDatabaseRoute } from "@/lib/db";
 import { localDateForTimeZone } from "@/lib/policies";
+import { contactPhoneSchema } from "@/lib/validation";
 import { NextResponse } from "next/server";
 
 type RouteContext = { params: Promise<{ resource: string }> };
@@ -141,6 +142,7 @@ const memberSchema = z.object({
   name: z.string().trim().min(2).max(100),
   email: z.string().trim().email().max(254).transform((value) => value.toLowerCase()),
   password: z.string().min(12).max(128),
+  phone: contactPhoneSchema.nullable().optional(),
   feeId: z.string().cuid().nullable().optional(),
 });
 const assignedPlanSchema = z.object({
@@ -223,6 +225,7 @@ async function createRecord(request: Request, context: RouteContext) {
             name: input.name,
             email: input.email,
             username: input.email,
+            phone: input.phone ?? null,
             passwordHash: await bcrypt.hash(input.password, 12),
             role: "USER",
             gymId,

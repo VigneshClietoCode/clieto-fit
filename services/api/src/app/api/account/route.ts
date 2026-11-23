@@ -8,14 +8,16 @@ import {
 } from "@/lib/api";
 import { createSession } from "@/lib/auth";
 import { db, withDatabaseRoute } from "@/lib/db";
+import { contactPhoneSchema } from "@/lib/validation";
 import { NextResponse } from "next/server";
 
 const updateSchema = z.object({
   name: z.string().trim().min(2).max(100).optional(),
+  phone: contactPhoneSchema.nullable().optional(),
   currentPassword: z.string().min(1).max(128).optional(),
   newPassword: z.string().min(12).max(128).optional(),
 }).refine(
-  (value) => Boolean(value.name || value.newPassword) &&
+  (value) => Boolean(value.name || value.newPassword || value.phone !== undefined) &&
     (Boolean(value.currentPassword) === Boolean(value.newPassword)),
   { message: "Enter your current password to set a new password." },
 );
@@ -38,6 +40,7 @@ async function updateAccount(request: Request) {
       where: { id: principal.id },
       data: {
         name: input.name,
+        phone: input.phone,
         ...(input.newPassword ? { passwordHash: await bcrypt.hash(input.newPassword, 12) } : {}),
       },
     });

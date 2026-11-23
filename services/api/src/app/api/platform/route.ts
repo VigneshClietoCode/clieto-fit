@@ -8,6 +8,7 @@ import {
   requireRoles,
 } from "@/lib/api";
 import { db, withDatabaseRoute } from "@/lib/db";
+import { contactPhoneSchema } from "@/lib/validation";
 import { NextResponse } from "next/server";
 
 const createGymSchema = z.object({
@@ -20,6 +21,7 @@ const createAccountSchema = z.object({
   name: z.string().trim().min(2).max(100),
   email: z.string().trim().email().max(254).transform((value) => value.toLowerCase()),
   password: z.string().min(12).max(128),
+  phone: contactPhoneSchema.nullable().optional(),
   role: z.enum(["ADMIN", "USER"]),
   gymId: z.string().cuid(),
 });
@@ -128,6 +130,7 @@ async function createPlatformResource(request: Request) {
             name: input.name,
             email: input.email,
             username: input.email,
+            phone: input.phone ?? null,
             passwordHash: await bcrypt.hash(input.password, 12),
             role: input.role,
             gymId: input.gymId,
