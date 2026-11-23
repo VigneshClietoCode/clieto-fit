@@ -70,6 +70,11 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .login-help { margin: 19px 0 0; color: #79837d; font-size: 12px; text-align: center; line-height: 1.65; }
 .login-security { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 48px; color: #98a39b; font-size: 10px; }
 .login-security span { color: var(--green); font-size: 15px; }
+.google-sso { margin: 0 0 4px; }
+.google-sso-button { width: 100%; min-height: 44px; }
+.google-sso-loading { margin: 8px 0 0; font-size: 13px; color: #79837d; text-align: center; }
+.login-divider { display: flex; align-items: center; gap: 12px; margin: 20px 0; color: #b0b8b2; font-size: 12px; }
+.login-divider::before, .login-divider::after { content: ""; flex: 1; height: 1px; background: #e9eee9; }
 
 /* App shell */
 .app-shell { min-height: 100vh; }

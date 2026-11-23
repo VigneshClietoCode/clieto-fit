@@ -23,13 +23,17 @@ const contentSecurityPolicy = [
   `img-src 'self' ${apiOrigin} data: blob:`,
   "style-src 'self' 'unsafe-inline'",
   `script-src 'self' 'unsafe-inline'${isDevelopment ? " 'unsafe-eval'" : ""}`,
-  "script-src-elem 'self' 'unsafe-inline' https://static.cloudflareinsights.com",
-  `connect-src 'self' ${apiOrigin}${isDevelopment ? " ws://localhost:3000 ws://127.0.0.1:3000" : ""}`,
+  "script-src-elem 'self' 'unsafe-inline' https://static.cloudflareinsights.com https://accounts.google.com",
+  `connect-src 'self' ${apiOrigin} https://accounts.google.com${isDevelopment ? " ws://localhost:3000 ws://127.0.0.1:3000" : ""}`,
+  "frame-src https://accounts.google.com",
   "font-src 'self'",
 ].join("; ");
 
 const nextConfig: NextConfig = {
-  env: { API_INTERNAL_URL: apiUrl },
+  env: {
+    API_INTERNAL_URL: apiUrl,
+    NEXT_PUBLIC_GOOGLE_CLIENT_ID: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "",
+  },
   poweredByHeader: false,
   outputFileTracingRoot: workspaceRoot,
   transpilePackages: ["@clieto-fit/shared"],
