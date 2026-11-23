@@ -6,15 +6,8 @@ import { useRouter } from "next/navigation";
 import { readApiJson } from "@/lib/api-response";
 import { apiUrl } from "@/lib/api-url";
 
-const portals = [
-  { value: "SUPER_ADMIN", label: "Super Admin" },
-  { value: "ADMIN", label: "Gym Admin / Trainer" },
-  { value: "USER", label: "Member" },
-] as const;
-
 export default function LoginForm() {
   const router = useRouter();
-  const [portal, setPortal] = useState<(typeof portals)[number]["value"]>("USER");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -29,7 +22,7 @@ export default function LoginForm() {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, portal }),
+        body: JSON.stringify({ email, password }),
       });
       const result = await readApiJson<{ error?: string; redirectTo?: string }>(response);
       if (!response.ok) throw new Error(result.error ?? "Unable to sign in.");
@@ -68,17 +61,9 @@ export default function LoginForm() {
         </div>
         <div className="login-card">
           <span className="eyebrow">WELCOME BACK</span>
-          <h2>Sign in to your portal</h2>
-          <p className="muted">Choose your portal and enter your account details.</p>
+          <h2>Sign in to your account</h2>
+          <p className="muted">Enter your email and password to continue.</p>
           <form onSubmit={submit} className="form-stack">
-            <label className="field">
-              <span>Portal</span>
-              <select value={portal} onChange={(event) => setPortal(event.target.value as typeof portal)}>
-                {portals.map((option) => (
-                  <option value={option.value} key={option.value}>{option.label}</option>
-                ))}
-              </select>
-            </label>
             <label className="field">
               <span>Email address</span>
               <input
