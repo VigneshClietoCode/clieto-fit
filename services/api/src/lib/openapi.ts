@@ -30,6 +30,7 @@ export const openApiDocument = {
     { name: "Portal", description: "Role-specific dashboard data" },
     { name: "Platform", description: "Super-admin operations" },
     { name: "Records", description: "Gym members and operational records" },
+    { name: "Tickets", description: "Support incident reporting and resolution" },
   ],
   paths: {
     "/api/health": {
@@ -281,6 +282,62 @@ export const openApiDocument = {
           "401": responseRef,
           "403": responseRef,
           "404": responseRef,
+          "500": responseRef,
+        },
+      },
+    },
+    "/api/tickets": {
+      get: {
+        tags: ["Tickets"],
+        summary: "List support tickets",
+        description:
+          "Super Admins can view all tickets. Gym Admins and members can view only tickets they reported.",
+        security: sessionSecurity,
+        responses: {
+          "200": jsonResponse("Tickets visible to the current account.", schemaRef("TicketListResponse")),
+          "401": responseRef,
+          "403": responseRef,
+          "500": responseRef,
+        },
+      },
+      post: {
+        tags: ["Tickets"],
+        summary: "Create a support ticket",
+        description:
+          "Gym Admins and members can report an issue. New tickets are automatically assigned to an active Super Admin.",
+        security: sessionSecurity,
+        requestBody: jsonRequest(schemaRef("TicketCreateRequest")),
+        responses: {
+          "201": jsonResponse("Ticket created.", schemaRef("TicketResponse")),
+          "400": responseRef,
+          "401": responseRef,
+          "403": responseRef,
+          "503": responseRef,
+          "500": responseRef,
+        },
+      },
+    },
+    "/api/tickets/{id}": {
+      patch: {
+        tags: ["Tickets"],
+        summary: "Update a ticket or add an update",
+        description:
+          "Only Super Admins can change priority, status, or resolution. A requester can add comments only to their own ticket.",
+        security: sessionSecurity,
+        parameters: [{
+          name: "id",
+          in: "path",
+          required: true,
+          schema: { type: "string" },
+        }],
+        requestBody: jsonRequest(schemaRef("TicketUpdateRequest")),
+        responses: {
+          "200": jsonResponse("Ticket updated.", schemaRef("TicketResponse")),
+          "400": responseRef,
+          "401": responseRef,
+          "403": responseRef,
+          "404": responseRef,
+          "409": responseRef,
           "500": responseRef,
         },
       },
@@ -652,6 +709,71 @@ export const openApiDocument = {
         type: "object",
         required: ["record"],
         properties: { record: schemaRef("Record") },
+      },
+      Ticket: {
+        type: "object",
+        additionalProperties: true,
+        required: ["id", "ticketNumber", "subject", "description", "category", "priority", "status"],
+        properties: {
+          id: { type: "string" },
+          ticketNumber: { type: "integer", example: 1 },
+          subject: { type: "string" },
+          description: { type: "string" },
+          category: {
+            type: "string",
+            enum: ["ACCOUNT_ACCESS", "BILLING_PAYMENT", "ATTENDANCE", "TRAINING_DIET", "EQUIPMENT_FACILITY", "APP_TECHNICAL", "OTHER"],
+          },
+          subcategory: { type: "string", nullable: true },
+          priority: { type: "string", enum: ["LOW", "MEDIUM", "HIGH"] },
+          status: { type: "string", enum: ["NEW", "IN_PROGRESS", "ON_HOLD", "RESOLVED", "CLOSED"] },
+          resolutionNotes: { type: "string", nullable: true },
+          resolvedAt: { type: "string", format: "date-time", nullable: true },
+          createdAt: { type: "string", format: "date-time" },
+          updatedAt: { type: "string", format: "date-time" },
+          reporter: { type: "object", additionalProperties: true },
+          assignedTo: { type: "object", additionalProperties: true },
+          gym: { type: "object", additionalProperties: true },
+          comments: { type: "array", items: { type: "object", additionalProperties: true } },
+        },
+      },
+      TicketListResponse: {
+        type: "object",
+        required: ["tickets"],
+        properties: { tickets: { type: "array", items: schemaRef("Ticket") } },
+      },
+      TicketResponse: {
+        type: "object",
+        required: ["ticket"],
+        properties: { ticket: schemaRef("Ticket") },
+      },
+      TicketCreateRequest: {
+        type: "object",
+        required: ["subject", "description", "category"],
+        properties: {
+          subject: { type: "string", minLength: 4, maxLength: 120 },
+          description: { type: "string", minLength: 10, maxLength: 5000 },
+          category: {
+            type: "string",
+            enum: ["ACCOUNT_ACCESS", "BILLING_PAYMENT", "ATTENDANCE", "TRAINING_DIET", "EQUIPMENT_FACILITY", "APP_TECHNICAL", "OTHER"],
+          },
+          subcategory: { type: "string", maxLength: 80 },
+          priority: { type: "string", enum: ["LOW", "MEDIUM", "HIGH"], default: "MEDIUM" },
+        },
+      },
+      TicketUpdateRequest: {
+        type: "object",
+        properties: {
+          status: { type: "string", enum: ["NEW", "IN_PROGRESS", "ON_HOLD", "RESOLVED", "CLOSED"] },
+          priority: { type: "string", enum: ["LOW", "MEDIUM", "HIGH"] },
+          resolutionNotes: { type: "string", minLength: 2, maxLength: 4000 },
+          comment: { type: "string", minLength: 1, maxLength: 2000 },
+        },
+        anyOf: [
+          { required: ["status"] },
+          { required: ["priority"] },
+          { required: ["resolutionNotes"] },
+          { required: ["comment"] },
+        ],
       },
       RecordCreateRequest: {
         anyOf: [

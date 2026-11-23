@@ -4,6 +4,7 @@ import { ApiError, requireRoles } from "./api";
 import {
   currentBillingMonth,
   billingMonthForTimeZone,
+  canTransitionTicketStatus,
   isPaymentFullyPaid,
   localDateForTimeZone,
 } from "./policies";
@@ -36,4 +37,13 @@ test("billing periods use a stable YYYY-MM format", () => {
     billingMonthForTimeZone(new Date("2026-03-01T02:00:00.000Z"), "America/Los_Angeles"),
     "2026-02",
   );
+});
+
+test("ticket status transitions follow the support workflow", () => {
+  assert.equal(canTransitionTicketStatus("NEW", "IN_PROGRESS"), true);
+  assert.equal(canTransitionTicketStatus("IN_PROGRESS", "ON_HOLD"), true);
+  assert.equal(canTransitionTicketStatus("RESOLVED", "IN_PROGRESS"), true);
+  assert.equal(canTransitionTicketStatus("RESOLVED", "CLOSED"), true);
+  assert.equal(canTransitionTicketStatus("CLOSED", "IN_PROGRESS"), false);
+  assert.equal(canTransitionTicketStatus("NEW", "CLOSED"), false);
 });

@@ -1,3 +1,5 @@
+import type { TicketStatus } from "@clieto-fit/shared/ticket-types";
+
 export function localDateForTimeZone(date: Date, timeZone: string): string {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone,
@@ -23,4 +25,19 @@ export function currentBillingMonth(date = new Date()): string {
 
 export function billingMonthForTimeZone(date: Date, timeZone: string): string {
   return localDateForTimeZone(date, timeZone).slice(0, 7);
+}
+
+export function canTransitionTicketStatus(
+  current: TicketStatus,
+  next: TicketStatus,
+): boolean {
+  if (current === next) return true;
+  const allowed: Record<TicketStatus, readonly TicketStatus[]> = {
+    NEW: ["IN_PROGRESS", "ON_HOLD", "RESOLVED"],
+    IN_PROGRESS: ["ON_HOLD", "RESOLVED"],
+    ON_HOLD: ["IN_PROGRESS", "RESOLVED"],
+    RESOLVED: ["IN_PROGRESS", "CLOSED"],
+    CLOSED: [],
+  };
+  return allowed[current].includes(next);
 }

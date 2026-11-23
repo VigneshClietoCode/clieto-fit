@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     "./auth-types": "./src/auth-types.ts",
-    "./session-constants": "./src/session-constants.ts"
+    "./session-constants": "./src/session-constants.ts",
+    "./ticket-types": "./src/ticket-types.ts"
   }
 }

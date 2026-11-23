@@ -40,11 +40,13 @@ The separate Android and iOS Expo / React Native project is in [`apps/mobile`](.
 
 ## Portals and capabilities
 
-- **Super Admin:** create and suspend gyms and gym accounts, configure the allow-listed platform settings, and review an audit trail for platform mutations. Member health plans and payment records are not included in platform summaries.
-- **Admin / Trainer:** manage members and fee assignments, training and diet plans, daily attendance, fee structures, manual payment records, offers, equipment, gym timezone, and a validated gym logo.
-- **Member:** view only their assigned plans, own attendance and payment history, assigned fee, enabled/in-date gym offers, and gym equipment; check in once per local gym day; update their own name and password.
+- **Super Admin:** create and suspend gyms and gym accounts, configure the allow-listed platform settings, review an audit trail for platform mutations, and manage support tickets from every gym.
+- **Admin / Trainer:** manage members and fee assignments, training and diet plans, daily attendance, fee structures, manual payment records, offers, equipment, gym timezone, and a validated gym logo; submit and track their own support tickets.
+- **Member:** view only their assigned plans, own attendance and payment history, assigned fee, enabled/in-date gym offers, and gym equipment; check in once per local gym day; update their own name and password; submit and track their own support tickets.
 
 All data-bearing APIs enforce role, gym, and (for members) record ownership on the server. Login checks the selected portal against the stored role. Sessions use random opaque tokens stored as HMAC digests; web sessions use HTTP-only cookies and mobile sessions use bearer tokens. Cookie-authenticated mutations check the configured web origin. Passwords are bcrypt-hashed. Admin and Super Admin account creation requires a 12-character minimum password; the Super Admin bootstrap values are supplied only through environment variables.
+
+Support tickets receive a reference number and are assigned to an active Super Admin. Requesters choose from Account & access, Billing & payments, Attendance, Training & diet, Equipment & facilities, App/technical, and Other categories; an optional subcategory; and Low/Medium/High priority. They can describe the issue and follow its public updates. Super Admins can reprioritize tickets, move them through New, In Progress, On Hold, Resolved, and Closed, and record resolution notes. Only the requester and Super Admins can view a ticket and its conversation.
 
 ## Explicit initial policies
 
@@ -52,6 +54,7 @@ All data-bearing APIs enforce role, gym, and (for members) record ownership on t
 - The payment dashboard counts active members with an active fee assignment. A member is paid for a `YYYY-MM` billing month only when the authoritative payment record is `PAID` and its amount covers the fee snapshot. Partial, refunded, overdue, and missing records count as unpaid. Members without an active fee are reported separately and excluded from paid/unpaid totals.
 - Payment records are manually maintained; no payment gateway, collection, or settlement integration is included. Member reminders are in-app only.
 - Offers apply to all members in a gym when enabled and within their configured date range.
+- Ticket status transitions are controlled: New can move to In Progress, On Hold, or Resolved; active tickets can move between In Progress and On Hold before resolution; Resolved can be reopened or Closed; Closed is terminal. Resolution notes are required before resolving or closing.
 
 ## API outline
 
@@ -68,6 +71,7 @@ The API also has a Cloudflare build configuration. Set its project root director
 - `GET /api/records/{members|training|diets|attendance|fees|payments|offers|equipment}`
 - `POST /api/records/{resource}`, `PATCH|DELETE /api/records/{resource}/{id}`
 - `GET|POST|PATCH /api/platform` (Super Admin only)
+- `GET|POST /api/tickets`, `PATCH /api/tickets/{id}` (Gym Admins and members can create and comment on their own tickets; Super Admins can manage all tickets)
 - `GET|PATCH /api/gym` (Admin only)
 - `PUT|DELETE /api/branding`, `GET /api/branding/{gymId}`
 - `PATCH /api/account` (the signed-in account only)
