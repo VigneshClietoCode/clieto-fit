@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import type { Principal, Role } from "@clieto-fit/shared/auth-types";
 import { readApiJson } from "@/lib/api-response";
 import { apiUrl } from "@/lib/api-url";
+import TicketPanel from "./ticket-panel";
 
 type Module =
   | "overview"
@@ -21,6 +22,7 @@ type Module =
   | "platform"
   | "system-settings"
   | "activity"
+  | "tickets"
   | "profile";
 type GymInfo = { id: string; name: string; slug: string; timezone: string; logoUrl: string | null };
 type Metrics = {
@@ -116,6 +118,7 @@ const navigation: Record<Role, Array<{ id: Module; label: string; icon: string }
     { id: "platform", label: "Gyms & accounts", icon: "▦" },
     { id: "system-settings", label: "System settings", icon: "⚙" },
     { id: "activity", label: "Audit activity", icon: "◷" },
+    { id: "tickets", label: "Incident tickets", icon: "▣" },
   ],
   ADMIN: [
     { id: "overview", label: "Overview", icon: "⌂" },
@@ -128,6 +131,7 @@ const navigation: Record<Role, Array<{ id: Module; label: string; icon: string }
     { id: "offers", label: "Offers", icon: "✳" },
     { id: "equipment", label: "Equipment", icon: "◈" },
     { id: "gym-settings", label: "Gym settings", icon: "⚙" },
+    { id: "tickets", label: "Support tickets", icon: "▣" },
   ],
   USER: [
     { id: "overview", label: "Overview", icon: "⌂" },
@@ -139,6 +143,7 @@ const navigation: Record<Role, Array<{ id: Module; label: string; icon: string }
     { id: "offers", label: "Gym offers", icon: "✳" },
     { id: "equipment", label: "Equipment", icon: "◈" },
     { id: "profile", label: "My account", icon: "○" },
+    { id: "tickets", label: "Support tickets", icon: "▣" },
   ],
 };
 
@@ -156,6 +161,7 @@ const titles: Record<Module, string> = {
   platform: "Gyms & accounts",
   "system-settings": "System settings",
   activity: "Audit activity",
+  tickets: "Incident tickets",
   profile: "My account",
 };
 
@@ -283,6 +289,7 @@ function DashboardWorkspace({
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(principal.role === "SUPER_ADMIN");
+  const [ticketRefreshKey, setTicketRefreshKey] = useState(0);
 
   const loadPortal = useCallback(async () => {
     const data = await apiRequest<PortalData>("/api/portal");
@@ -314,6 +321,7 @@ function DashboardWorkspace({
     setBusy(true);
     try {
       await loadPortal();
+      if (active === "tickets") setTicketRefreshKey((current) => current + 1);
       if (principal.role === "SUPER_ADMIN" && ["platform", "system-settings", "activity"].includes(active)) {
         await loadPlatform();
       }
@@ -357,7 +365,7 @@ function DashboardWorkspace({
       void loadRecords(module).catch((requestError: unknown) => {
         setError(requestError instanceof Error ? requestError.message : "Unable to load records.");
       });
-    } else if (principal.role === "SUPER_ADMIN" && module !== "overview") {
+    } else if (principal.role === "SUPER_ADMIN" && ["platform", "system-settings", "activity"].includes(module)) {
       void loadPlatform().catch((requestError: unknown) => {
         setError(requestError instanceof Error ? requestError.message : "Unable to load platform data.");
       });
@@ -608,6 +616,9 @@ function DashboardWorkspace({
           )}
           {principal.role === "SUPER_ADMIN" && active === "activity" && platform && (
             <ActivityPanel audits={platform.audits} />
+          )}
+          {active === "tickets" && (
+            <TicketPanel role={principal.role} refreshKey={ticketRefreshKey} />
           )}
           {principal.role === "USER" && active === "profile" && (
             <ProfilePanel
@@ -1201,6 +1212,7 @@ function pageDescription(module: Module, role: Role, gymName?: string): string {
   if (module === "gym-settings") return "Set your gym timezone, name, and member-facing logo.";
   if (module === "system-settings") return "A small set of platform-wide operational preferences.";
   if (module === "activity") return "A traceable history of sensitive platform-level changes.";
+  if (module === "tickets") return role === "SUPER_ADMIN" ? "Review, prioritize, and resolve support requests from across the platform." : "Report an issue and track updates from the Super Admin team.";
   if (module === "profile") return "Manage the details and password for your own account.";
   return "Everything you need, with access scoped to the right people.";
 }
