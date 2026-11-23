@@ -9,7 +9,6 @@ import { NextResponse } from "next/server";
 const credentialsSchema = z.object({
   email: z.string().trim().email().max(254).transform((value) => value.toLowerCase()),
   password: z.string().min(1).max(128),
-  portal: z.enum(["SUPER_ADMIN", "ADMIN", "USER"]),
   client: z.enum(["web", "mobile"]).default("web"),
 });
 
@@ -58,10 +57,9 @@ async function login(request: Request) {
       !user ||
       !passwordMatches ||
       user.status !== "ACTIVE" ||
-      user.role !== input.portal ||
       (user.role !== "SUPER_ADMIN" && user.gym?.status !== "ACTIVE")
     ) {
-      throw new ApiError("Email, password, or selected portal is incorrect.", 401);
+      throw new ApiError("Invalid username or password.", 401);
     }
 
     attempts.delete(key);
