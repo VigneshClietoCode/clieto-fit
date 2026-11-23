@@ -127,6 +127,7 @@ async function createPlatformResource(request: Request) {
           data: {
             name: input.name,
             email: input.email,
+            username: input.email,
             passwordHash: await bcrypt.hash(input.password, 12),
             role: input.role,
             gymId: input.gymId,
@@ -251,6 +252,88 @@ async function updatePlatform(request: Request) {
   }
 }
 
+const deleteSchema = z.discriminatedUnion("target", [
+  z.object({ target: z.literal("gym"), id: z.string().cuid() }),
+  z.object({ target: z.literal("account"), id: z.string().cuid() }),
+]);
+
+async function deletePlatformResource(request: Request) {
+  try {
+    const principal = await requirePrincipal();
+    requireRoles(principal, ["SUPER_ADMIN"]);
+    const input = deleteSchema.parse(await readJson(request));
+
+    if (input.target === "gym") {
+      const gym = await db.gym.findUnique({
+        where: { id: input.id },
+        select: { id: true, name: true },
+      });
+      if (!gym) throw new ApiError("Workspace not found.", 404);
+
+      await db.$transaction(async (tx) => {
+        // Delete training and diet plans created by any user in this gym.
+        // These have Restrict on createdById → User, so they must go before the
+        // gym cascade (which would otherwise hit that constraint via TrainingPlan.gymId).
+        await tx.trainingPlan.deleteMany({ where: { gymId: input.id } });
+        await tx.dietPlan.deleteMany({ where: { gymId: input.id } });
+
+        // Now delete the gym — all remaining children cascade automatically:
+        // Attendance, FeeStructure, Payment, Offer, Equipment.
+        // Users become orphaned (gymId → null) per SetNull rule.
+        await tx.gym.delete({ where: { id: input.id } });
+
+        await tx.auditLog.create({
+          data: {
+            actorId: principal.id,
+            action: "gym.deleted",
+            entityType: "Gym",
+            entityId: input.id,
+          },
+        });
+      });
+
+      return NextResponse.json({ deleted: true, id: input.id });
+    }
+
+    // Delete account
+    if (input.id === principal.id) {
+      throw new ApiError("You cannot delete your own platform account.", 400);
+    }
+
+    const user = await db.user.findFirst({
+      where: { id: input.id, role: { in: ["ADMIN", "USER"] } },
+      select: { id: true, name: true },
+    });
+    if (!user) throw new ApiError("Account not found.", 404);
+
+    await db.$transaction(async (tx) => {
+      // Training and diet plans where this user is the creator have Restrict on
+      // createdById, which would block the user delete. Remove them first.
+      await tx.trainingPlan.deleteMany({ where: { createdById: input.id } });
+      await tx.dietPlan.deleteMany({ where: { createdById: input.id } });
+
+      // Delete the user — cascades: Session, Attendance (as userId),
+      // Payment (as memberId), TrainingPlan membership (as memberId),
+      // DietPlan membership (as memberId). AuditLog actor is SetNull.
+      await tx.user.delete({ where: { id: input.id } });
+
+      await tx.auditLog.create({
+        data: {
+          actorId: principal.id,
+          action: "account.deleted",
+          entityType: "User",
+          entityId: input.id,
+        },
+      });
+    });
+
+    return NextResponse.json({ deleted: true, id: input.id });
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
+
 export const GET = withDatabaseRoute(getPlatform);
 export const POST = withDatabaseRoute(createPlatformResource);
 export const PATCH = withDatabaseRoute(updatePlatform);
+export const DELETE = withDatabaseRoute(deletePlatformResource);

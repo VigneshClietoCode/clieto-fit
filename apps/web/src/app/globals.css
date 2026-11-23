@@ -205,6 +205,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .action-button:hover { background: #eef5ef; }
 .action-warn { color: #a36f53; }
 .action-warn:hover { background: #fbf2ea; }
+.action-danger { color: #b94040; }
+.action-danger:hover { background: #fdf0f0; }
 .empty-state { display: grid; justify-items: center; gap: 7px; padding: 42px 18px; color: #77837a; text-align: center; }
 .empty-state strong { color: #4e5e52; font-size: 12px; }
 .empty-state p { margin: 0; color: #9aa39c; font-size: 11px; }

@@ -1105,11 +1105,11 @@ function PlatformPanel({
       </div>
       <section className="section-card records-card">
         <div className="panel-title-row"><div><span className="card-kicker">PLATFORM WORKSPACES</span><h2>{data.gyms.length} {data.gyms.length === 1 ? "gym" : "gyms"}</h2></div></div>
-        {data.gyms.length === 0 ? <div className="empty-state"><strong>No workspaces yet</strong><p>Create a gym to get started.</p></div> : <div className="table-scroll"><table className="data-table"><thead><tr><th>Gym</th><th>Timezone</th><th>Accounts</th><th>Status</th><th>Action</th></tr></thead><tbody>{data.gyms.map((gym) => <tr key={gym.id}><td><strong className="cell-title">{gym.name}</strong><small className="cell-subtitle">{gym.slug}</small></td><td>{gym.timezone}</td><td>{gym._count.users}</td><td><span className={`status-pill ${gym.status === "ACTIVE" ? "status-good" : "status-muted"}`}><i />{humanize(gym.status)}</span></td><td><button className="action-button" onClick={() => void patchPlatform({ target: "gym", id: gym.id, status: gym.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE" }, onReload, onNotice, onError)}>{gym.status === "ACTIVE" ? "Suspend" : "Reactivate"}</button></td></tr>)}</tbody></table></div>}
+        {data.gyms.length === 0 ? <div className="empty-state"><strong>No workspaces yet</strong><p>Create a gym to get started.</p></div> : <div className="table-scroll"><table className="data-table"><thead><tr><th>Gym</th><th>Timezone</th><th>Accounts</th><th>Status</th><th>Action</th></tr></thead><tbody>{data.gyms.map((gym) => <tr key={gym.id}><td><strong className="cell-title">{gym.name}</strong><small className="cell-subtitle">{gym.slug}</small></td><td>{gym.timezone}</td><td>{gym._count.users}</td><td><span className={`status-pill ${gym.status === "ACTIVE" ? "status-good" : "status-muted"}`}><i />{humanize(gym.status)}</span></td><td><button className="action-button" onClick={() => void patchPlatform({ target: "gym", id: gym.id, status: gym.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE" }, onReload, onNotice, onError)}>{gym.status === "ACTIVE" ? "Suspend" : "Reactivate"}</button><button className="action-button action-danger" onClick={() => void deletePlatformResource("gym", gym.id, gym.name, onReload, onNotice, onError)}>Delete</button></td></tr>)}</tbody></table></div>}
       </section>
       <section className="section-card records-card">
         <div className="panel-title-row"><div><span className="card-kicker">PLATFORM ACCOUNTS</span><h2>{data.accounts.length} accounts</h2></div></div>
-        <div className="table-scroll"><table className="data-table"><thead><tr><th>Account</th><th>Role</th><th>Workspace</th><th>Status</th><th>Action</th></tr></thead><tbody>{data.accounts.map((account) => <tr key={account.id}><td><strong className="cell-title">{account.name}</strong><small className="cell-subtitle">{account.email}</small></td><td>{humanize(account.role)}</td><td>{account.gym?.name ?? "—"}</td><td><span className={`status-pill ${account.status === "ACTIVE" ? "status-good" : "status-muted"}`}><i />{humanize(account.status)}</span></td><td><button className="action-button" onClick={() => void patchPlatform({ target: "account", id: account.id, status: account.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE" }, onReload, onNotice, onError)}>{account.status === "ACTIVE" ? "Suspend" : "Reactivate"}</button></td></tr>)}</tbody></table></div>
+        <div className="table-scroll"><table className="data-table"><thead><tr><th>Account</th><th>Role</th><th>Workspace</th><th>Status</th><th>Action</th></tr></thead><tbody>{data.accounts.map((account) => <tr key={account.id}><td><strong className="cell-title">{account.name}</strong><small className="cell-subtitle">{account.email}</small></td><td>{humanize(account.role)}</td><td>{account.gym?.name ?? "—"}</td><td><span className={`status-pill ${account.status === "ACTIVE" ? "status-good" : "status-muted"}`}><i />{humanize(account.status)}</span></td><td><button className="action-button" onClick={() => void patchPlatform({ target: "account", id: account.id, status: account.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE" }, onReload, onNotice, onError)}>{account.status === "ACTIVE" ? "Suspend" : "Reactivate"}</button><button className="action-button action-danger" onClick={() => void deletePlatformResource("account", account.id, account.name, onReload, onNotice, onError)}>Delete</button></td></tr>)}</tbody></table></div>
       </section>
     </div>
   );
@@ -1118,6 +1118,28 @@ function PlatformPanel({
 async function patchPlatform(payload: unknown, reload: () => Promise<void>, notice: (message: string) => void, error: (message: string) => void) {
   try { await apiRequest("/api/platform", "PATCH", payload); notice("Platform record updated."); await reload(); }
   catch (requestError) { error(requestError instanceof Error ? requestError.message : "Could not update platform record."); }
+}
+
+async function deletePlatformResource(
+  target: "gym" | "account",
+  id: string,
+  label: string,
+  reload: () => Promise<void>,
+  notice: (message: string) => void,
+  error: (message: string) => void,
+) {
+  const confirmMessage =
+    target === "gym"
+      ? `Permanently delete workspace "${label}"?\n\nThis will delete all training plans, diet plans, attendance records, fees, payments, offers, and equipment for this workspace. Member accounts will become unassigned but are not deleted.\n\nThis cannot be undone.`
+      : `Permanently delete account "${label}"?\n\nAll their sessions, attendance records, payments, and assigned training/diet plans will be removed.\n\nThis cannot be undone.`;
+  if (!window.confirm(confirmMessage)) return;
+  try {
+    await apiRequest("/api/platform", "DELETE", { target, id });
+    notice(target === "gym" ? "Workspace deleted." : "Account deleted.");
+    await reload();
+  } catch (requestError) {
+    error(requestError instanceof Error ? requestError.message : "Could not delete this record.");
+  }
 }
 
 function SystemSettings({ data, onReload, onNotice, onError }: { data: PlatformData; onReload: () => Promise<void>; onNotice: (message: string) => void; onError: (message: string) => void }) {

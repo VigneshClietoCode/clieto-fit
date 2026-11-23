@@ -222,6 +222,7 @@ async function createRecord(request: Request, context: RouteContext) {
           data: {
             name: input.name,
             email: input.email,
+            username: input.email,
             passwordHash: await bcrypt.hash(input.password, 12),
             role: "USER",
             gymId,

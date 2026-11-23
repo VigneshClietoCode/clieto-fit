@@ -15,7 +15,7 @@ async function main() {
   await db.user.upsert({
     where: { email },
     update: { name, passwordHash, role: "SUPER_ADMIN", status: "ACTIVE", gymId: null },
-    create: { email, name, passwordHash, role: "SUPER_ADMIN" },
+    create: { email, username: email, name, passwordHash, role: "SUPER_ADMIN" },
   });
   console.info("Super Admin account is ready.");
 }
