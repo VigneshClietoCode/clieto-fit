@@ -712,8 +712,16 @@ export const openApiDocument = {
       },
       PlatformCreateResponse: {
         type: "object",
-        additionalProperties: true,
-        description: "Contains either the created gym or account.",
+        description:
+          "Contains the created gym or account. Gym Admin account creation includes emailSent to report welcome-email delivery.",
+        properties: {
+          gym: { type: "object", additionalProperties: true },
+          account: { type: "object", additionalProperties: true },
+          emailSent: {
+            type: "boolean",
+            description: "Present for Gym Admin account creation; false means the account exists but the email was not delivered.",
+          },
+        },
       },
       PlatformSettingResponse: {
         type: "object",

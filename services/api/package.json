@@ -9,7 +9,7 @@
     "deploy:cloudflare": "wrangler deploy --config wrangler.jsonc",
     "start": "next start -p 3001",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test src/lib/policies.test.ts src/proxy.test.ts",
+    "test": "tsx --test src/lib/policies.test.ts src/lib/email.test.ts src/proxy.test.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",

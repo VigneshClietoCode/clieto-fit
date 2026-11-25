@@ -8,6 +8,12 @@ import {
   requireRoles,
 } from "@/lib/api";
 import { db, withDatabaseRoute } from "@/lib/db";
+import {
+  assertWelcomeEmailConfigured,
+  EmailConfigurationError,
+  EmailDeliveryError,
+  sendGymAdminWelcomeEmail,
+} from "@/lib/email";
 import { contactPhoneSchema } from "@/lib/validation";
 import { NextResponse } from "next/server";
 
@@ -124,6 +130,17 @@ async function createPlatformResource(request: Request) {
         select: { id: true },
       });
       if (!gym) throw new ApiError("Active gym not found.", 404);
+      if (input.role === "ADMIN") {
+        try {
+          assertWelcomeEmailConfigured();
+        } catch (error) {
+          if (!(error instanceof EmailConfigurationError)) throw error;
+          throw new ApiError(
+            "Gym Admin email delivery is not configured. Configure RESEND_API_KEY, RESEND_FROM_EMAIL, and APP_URL.",
+            503,
+          );
+        }
+      }
       const user = await db.$transaction(async (transaction) => {
         const created = await transaction.user.create({
           data: {
@@ -147,6 +164,26 @@ async function createPlatformResource(request: Request) {
         });
         return created;
       });
+      if (input.role === "ADMIN") {
+        try {
+          await sendGymAdminWelcomeEmail({
+            name: input.name,
+            email: input.email,
+            password: input.password,
+          });
+          return NextResponse.json({ account: user, emailSent: true }, { status: 201 });
+        } catch (error) {
+          if (!(error instanceof EmailDeliveryError || error instanceof EmailConfigurationError)) {
+            throw error;
+          }
+          console.error(JSON.stringify({
+            event: "gym_admin_welcome_email_failed",
+            userId: user.id,
+            status: error instanceof EmailDeliveryError ? error.status : undefined,
+          }));
+          return NextResponse.json({ account: user, emailSent: false }, { status: 201 });
+        }
+      }
       return NextResponse.json({ account: user }, { status: 201 });
     }
 
