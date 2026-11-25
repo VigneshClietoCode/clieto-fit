@@ -1175,14 +1175,24 @@ function PlatformPanel({
     setBusy(true);
     onError("");
     try {
-      await apiRequest(
+      const result = await apiRequest<{ emailSent?: boolean }>(
         "/api/platform",
         "POST",
         action === "create-gym"
           ? { action, ...gymDraft }
           : { action, ...accountDraft, phone: accountDraft.phone.trim() || null },
       );
-      onNotice(action === "create-gym" ? "Workspace created." : "Account created.");
+      if (action === "create-account" && accountDraft.role === "ADMIN" && result.emailSent === false) {
+        onError("Account created, but Resend could not deliver the login email. The Gym Admin has not received their credentials.");
+      } else {
+        onNotice(
+          action === "create-gym"
+            ? "Workspace created."
+            : accountDraft.role === "ADMIN"
+              ? "Account created and login email sent."
+              : "Account created.",
+        );
+      }
       if (action === "create-gym") setGymDraft({ name: "", slug: "", timezone: "UTC" });
       else setAccountDraft({ name: "", email: "", password: "", phone: "", role: "ADMIN", gymId: "" });
       await onReload();
@@ -1203,7 +1213,7 @@ function PlatformPanel({
           </form>
         </section>
         <section className="section-card settings-card">
-          <span className="card-kicker">NEW ACCOUNT</span><h2>Give a team member access</h2><p className="muted">Share their temporary password with them privately.</p>
+          <span className="card-kicker">NEW ACCOUNT</span><h2>Give a team member access</h2><p className="muted">Gym Admins receive their login email, temporary password, and sign-in URL automatically.</p>
           <form className="form-stack" onSubmit={(event) => void submit(event, "create-account")}>
             <label className="field"><span>Full name</span><input required minLength={2} maxLength={100} value={accountDraft.name} onChange={(event) => setAccountDraft({ ...accountDraft, name: event.target.value })} /></label>
             <label className="field"><span>Email</span><input required type="email" value={accountDraft.email} onChange={(event) => setAccountDraft({ ...accountDraft, email: event.target.value })} /></label>
