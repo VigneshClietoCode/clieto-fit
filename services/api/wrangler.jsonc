@@ -28,6 +28,9 @@
     "enabled": true
   },
   "vars": {
-    "GOOGLE_CLIENT_ID": "279662052023-57qrf1fsi0i8nu3q89lt20hpvqoet9hc.apps.googleusercontent.com"
+    "GOOGLE_CLIENT_ID": "279662052023-57qrf1fsi0i8nu3q89lt20hpvqoet9hc.apps.googleusercontent.com",
+    "APP_URL": "https://clietofit.clietocode.com",
+    "RESEND_API_KEY":"resend key",
+    "RESEND_FROM_EMAIL":"vignesh@clietocode.com"
   },
 }
