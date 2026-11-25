@@ -5,6 +5,7 @@ import {
   EmailConfigurationError,
   EmailDeliveryError,
   sendGymAdminWelcomeEmail,
+  sendMemberWelcomeEmail,
 } from "./email";
 
 const emailEnvironmentKeys = ["RESEND_API_KEY", "RESEND_FROM_EMAIL", "APP_URL"] as const;
@@ -72,6 +73,41 @@ test("Gym Admin welcome email sends credentials and login URL through Resend", a
     assert.match(payload.text, /Application URL: https:\/\/fit\.example\/login/);
     assert.match(payload.html, /&lt;Admin&gt;/);
     assert.match(payload.html, /Temp&lt;&amp;&quot;&#39;/);
+  } finally {
+    globalThis.fetch = originalFetch;
+    restoreEmailEnvironment(originalEnvironment);
+  }
+});
+
+test("member welcome email includes login email, temporary password, and application URL", async () => {
+  const originalEnvironment = saveEmailEnvironment();
+  const originalFetch = globalThis.fetch;
+  process.env.RESEND_API_KEY = "test-resend-key";
+  process.env.RESEND_FROM_EMAIL = "Clieto Fit <no-reply@example.com>";
+  process.env.APP_URL = "https://fit.example";
+  let requestInit: RequestInit | undefined;
+  globalThis.fetch = async (_input, init) => {
+    requestInit = init;
+    return new Response(null, { status: 200 });
+  };
+
+  try {
+    await sendMemberWelcomeEmail({
+      name: "Member",
+      email: "member@example.com",
+      password: "temporary-password",
+    });
+
+    const payload = JSON.parse(String(requestInit?.body)) as {
+      subject: string;
+      text: string;
+      html: string;
+    };
+    assert.equal(payload.subject, "Your Clieto Fit member account");
+    assert.match(payload.text, /Login email: member@example\.com/);
+    assert.match(payload.text, /Temporary password: temporary-password/);
+    assert.match(payload.text, /Application URL: https:\/\/fit\.example\/login/);
+    assert.match(payload.html, /Your member account is ready/);
   } finally {
     globalThis.fetch = originalFetch;
     restoreEmailEnvironment(originalEnvironment);

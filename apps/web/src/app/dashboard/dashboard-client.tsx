@@ -453,7 +453,7 @@ function DashboardWorkspace({
     setNotice("");
     try {
       const payload = buildRecordPayload(active, draft, principal.role, editing);
-      const response = await apiRequest<{ record: Row }>(
+      const response = await apiRequest<{ record: Row; emailSent?: boolean }>(
         editing ? `/api/records/${resource}/${editing.id}` : `/api/records/${resource}`,
         editing ? "PATCH" : "POST",
         payload,
@@ -464,7 +464,12 @@ function DashboardWorkspace({
       await loadRecords(active);
       await loadPortal();
       if (active === "members" && response.record?.id) {
-        setNotice("Member account created. Share the temporary sign-in password securely.");
+        if (response.emailSent === false) {
+          setNotice("");
+          setError("Member account created, but Resend could not deliver the login email. The member has not received their credentials.");
+        } else {
+          setNotice("Member account created and login email sent.");
+        }
       }
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Could not save this record.");

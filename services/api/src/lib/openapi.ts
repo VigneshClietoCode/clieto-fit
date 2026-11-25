@@ -745,7 +745,13 @@ export const openApiDocument = {
       RecordResponse: {
         type: "object",
         required: ["record"],
-        properties: { record: schemaRef("Record") },
+        properties: {
+          record: schemaRef("Record"),
+          emailSent: {
+            type: "boolean",
+            description: "Present when creating a member; false means the account exists but the welcome email was not delivered.",
+          },
+        },
       },
       Ticket: {
         type: "object",

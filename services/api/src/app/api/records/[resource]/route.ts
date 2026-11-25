@@ -8,6 +8,12 @@ import {
   requireRoles,
 } from "@/lib/api";
 import { db, withDatabaseRoute } from "@/lib/db";
+import {
+  assertWelcomeEmailConfigured,
+  EmailConfigurationError,
+  EmailDeliveryError,
+  sendMemberWelcomeEmail,
+} from "@/lib/email";
 import { localDateForTimeZone } from "@/lib/policies";
 import { contactPhoneSchema } from "@/lib/validation";
 import { NextResponse } from "next/server";
@@ -196,6 +202,7 @@ async function createRecord(request: Request, context: RouteContext) {
     const gymId = requireGymId(principal);
     const body = await readJson(request);
     let record: unknown;
+    let emailSent: boolean | undefined;
 
     if (resource === "attendance") {
       const input = attendanceSchema.parse(body);
@@ -220,7 +227,16 @@ async function createRecord(request: Request, context: RouteContext) {
           });
           if (!fee) throw new ApiError("Fee structure not found in this gym.", 404);
         }
-        record = await db.user.create({
+        try {
+          assertWelcomeEmailConfigured();
+        } catch (error) {
+          if (!(error instanceof EmailConfigurationError)) throw error;
+          throw new ApiError(
+            "Member email delivery is not configured. Configure RESEND_API_KEY, RESEND_FROM_EMAIL, and APP_URL.",
+            503,
+          );
+        }
+        const member = await db.user.create({
           data: {
             name: input.name,
             email: input.email,
@@ -233,6 +249,25 @@ async function createRecord(request: Request, context: RouteContext) {
           },
           select: { id: true, name: true, email: true, status: true, feeId: true },
         });
+        record = member;
+        try {
+          await sendMemberWelcomeEmail({
+            name: input.name,
+            email: input.email,
+            password: input.password,
+          });
+          emailSent = true;
+        } catch (error) {
+          if (!(error instanceof EmailDeliveryError || error instanceof EmailConfigurationError)) {
+            throw error;
+          }
+          console.error(JSON.stringify({
+            event: "member_welcome_email_failed",
+            userId: member.id,
+            status: error instanceof EmailDeliveryError ? error.status : undefined,
+          }));
+          emailSent = false;
+        }
       } else if (resource === "training" || resource === "diets") {
         const input = assignedPlanSchema.parse(body);
         await assertMemberInGym(input.memberId, gymId);
@@ -289,7 +324,10 @@ async function createRecord(request: Request, context: RouteContext) {
       }
     }
 
-    return NextResponse.json({ record }, { status: 201 });
+    return NextResponse.json(
+      { record, ...(resource === "members" ? { emailSent } : {}) },
+      { status: 201 },
+    );
   } catch (error) {
     return handleApiError(error);
   }

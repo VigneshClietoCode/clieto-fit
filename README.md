@@ -11,7 +11,7 @@ The repository is an npm workspace: the web app is in `apps/web`, the Expo
 mobile app is in `apps/mobile`, the existing Next.js API is in `services/api`,
 and shared auth contracts are in `packages/shared`.
 
-1. Copy `.env.example` to `.env`. Set `SUPABASE_URL` to your Supabase PostgreSQL connection string, a random `SESSION_SECRET` of at least 32 characters, and a Super Admin email, name, and password (at least 12 characters). Configure `RESEND_API_KEY`, `RESEND_FROM_EMAIL` (a sender verified in Resend), and `APP_URL` for Gym Admin welcome emails. Keep `.env` private.
+1. Copy `.env.example` to `.env`. Set `SUPABASE_URL` to your Supabase PostgreSQL connection string, a random `SESSION_SECRET` of at least 32 characters, and a Super Admin email, name, and password (at least 12 characters). Configure `RESEND_API_KEY`, `RESEND_FROM_EMAIL` (a sender verified in Resend), and `APP_URL` for Gym Admin and member welcome emails. Keep `.env` private.
 2. From the project directory, run:
 
    ```powershell
@@ -66,7 +66,7 @@ For the Cloudflare web Worker, set the root directory to `apps/web`, the build c
 
 The API also has a Cloudflare build configuration. Set its project root directory to `services/api`, build command to `npm run build:cloudflare`, and deploy command to `npm run deploy:cloudflare`. For production database access, create a Cloudflare Hyperdrive configuration for Supabase and bind it as `HYPERDRIVE` in `services/api/wrangler.jsonc`; keep the connection credentials inside Hyperdrive and never put them in Wrangler configuration or source control. The API uses that binding in Cloudflare Workers and uses local `SUPABASE_URL` for development and Prisma migrations. Set `SESSION_SECRET` as a Worker secret with `npx wrangler secret put SESSION_SECRET`. The API uses Prisma's JavaScript engine and PostgreSQL driver adapter for Cloudflare Workers. Before serving production traffic, migrate logo storage from the local filesystem to durable object storage.
 
-For production Gym Admin email, set `RESEND_API_KEY` as an API Worker secret with `npx wrangler secret put RESEND_API_KEY`, and set `RESEND_FROM_EMAIL` as a Worker variable to an address verified in Resend. The API Worker uses `APP_URL` from `services/api/wrangler.jsonc` to build the `/login` link.
+For production Gym Admin and member emails, set `RESEND_API_KEY` as an API Worker secret with `npx wrangler secret put RESEND_API_KEY`, and set `RESEND_FROM_EMAIL` as a Worker variable to an address verified in Resend. The API Worker uses `APP_URL` from `services/api/wrangler.jsonc` to build the `/login` link.
 
 - `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`
 - Mobile clients can send `"client": "mobile"` to the login endpoint to receive a bearer session token; include it as `Authorization: Bearer <token>` on subsequent requests and call logout to revoke it. Keep tokens in the platform's secure storage.
